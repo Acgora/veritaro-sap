@@ -11,8 +11,10 @@ Node ≥ 20.18, npm. Optional: Supabase CLI + Docker for a full local stack; Pos
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | browser + server | `sb_publishable_…` from Supabase → Settings → API. Safe to expose; RLS protects data |
 | `NEXT_PUBLIC_SITE_URL` | server | used for auth email redirects |
 | `SUPABASE_SECRET_KEY` | **server only** (Vercel Sensitive) | AI metering RPCs + route reads only. Never `NEXT_PUBLIC_` |
-| `AI_PROVIDER_ANTHROPIC_KEY` | **server only** (Vercel Sensitive) | Anthropic API key. Without it (or the secret key) the assistant shows "not configured"; the rest of the app works |
-| `AI_PROVIDER_ANTHROPIC_BASE_URL` | server, optional | tests point this at the mock provider |
+| `AI_PROVIDER_OPENAI_KEY` | **server only** (Vercel Sensitive) | OpenAI API key (active provider). Without it (or the secret key) the assistant says it is unavailable; the rest of the app works |
+| `AI_PROVIDER_OPENAI_BASE_URL` | server, optional | tests point this at `tests/e2e/mock-openai.mjs` |
+| `AI_PROVIDER_ANTHROPIC_KEY` | not required | Anthropic is disabled; key ignored |
+| `AI_PROVIDER_SELFHOSTED_BASE_URL` / `_KEY` | not used yet | future self-hosted model (see AI_ARCHITECTURE.md) |
 
 `.env.local` is git-ignored; `.env.example` is committed.
 
@@ -62,4 +64,4 @@ Supabase hosts the database, not the Next.js app. Recommended: push the repo to 
 
 ## End-to-end tests (Phase 002)
 
-`tests/e2e/phase2.mjs`, `smoke.mjs`, `roles.mjs` run against a local stack (Postgres + GoTrue + PostgREST + a small gateway) and a mock Anthropic server (`AI_PROVIDER_ANTHROPIC_BASE_URL`, key `mock-key`). They never call a real model.
+`tests/e2e/phase2.mjs`, `smoke.mjs`, `roles.mjs` run against a local stack (Postgres + GoTrue + PostgREST + a small gateway) and a mock OpenAI Responses server (`node tests/e2e/mock-openai.mjs`; `AI_PROVIDER_OPENAI_BASE_URL=http://127.0.0.1:54400`, key `mock-key`). The mock rejects requests that send `temperature`, omit `store:false` or use an unapproved model/effort. `smoke.mjs` needs `E2E_REGISTER=1` on a fresh email. They never call a real model.

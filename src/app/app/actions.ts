@@ -11,6 +11,7 @@ import { requireAppContext } from "@/lib/context";
 import {
   cancelAssistantAction, confirmAssistantAction, handleAssistantMessage, type AssistantReply,
 } from "@/lib/ai/orchestrator";
+import { resolveScreenContext } from "@/lib/ai/context";
 import { archiveCustomer } from "@/domain/customers/service";
 import { archiveTask } from "@/domain/tasks/service";
 import type { ServiceContext } from "@/domain/context";
@@ -50,8 +51,9 @@ async function aiServiceContext(): Promise<{ ctx: ServiceContext; app: Awaited<R
   };
 }
 
-export async function askAssistantAction(text: string, conversationId?: string): Promise<AssistantReply> {
+export async function askAssistantAction(text: string, conversationId?: string, pathname?: string): Promise<AssistantReply> {
   const { ctx, app } = await aiServiceContext();
+  const screen = await resolveScreenContext(ctx, pathname);
   const reply = await handleAssistantMessage(
     {
       ctx,
@@ -59,6 +61,7 @@ export async function askAssistantAction(text: string, conversationId?: string):
       timezone: app.organisation.timezone,
       currency: app.organisation.currency,
       userFirstName: app.profile.first_name,
+      screen,
     },
     String(text ?? "").slice(0, 2000),
     typeof conversationId === "string" ? conversationId : undefined,

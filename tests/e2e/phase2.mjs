@@ -1,6 +1,6 @@
 // Phase 002 browser test: customers + AI assistant (against a LOCAL stack with a mock AI provider).
 // Usage: E2E_BASE_URL=http://localhost:3100 E2E_EMAIL=... E2E_PASSWORD=... node tests/e2e/phase2.mjs
-// Expects: email auto-confirm, AI_PROVIDER_ANTHROPIC_BASE_URL pointing at tests' mock provider.
+// Expects: email auto-confirm, AI_PROVIDER_OPENAI_BASE_URL pointing at tests/e2e/mock-openai.mjs.
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
@@ -105,6 +105,14 @@ try {
   await page.getByRole("button", { name: "Send" }).click();
   await page.getByText("Found: Riverside Lodge.").waitFor({ timeout: 20000 });
   check("AI read answers from real data", true);
+
+  // Screen context: "this customer" resolves to the record on screen (verified server-side via RLS)
+  await page.goto(`${BASE}/app/sales/customers?q=ABC`);
+  await page.getByRole("link", { name: "ABC Construction", exact: true }).click();
+  await page.waitForURL(/\/app\/sales\/customers\/[0-9a-f-]{36}/);
+  await page.fill("#ai-command", "tell me about this customer");
+  await page.getByRole("button", { name: "Send" }).click();
+  check("assistant understands 'this customer' from the current screen", await visible(page.getByText("You're looking at ABC Construction."), 20000));
 
   // AI: consequential → confirmation, nothing changes until confirmed
   await page.fill("#ai-command", "archive Riverside Lodge");

@@ -267,9 +267,9 @@ export type Database = {
         Relationships: []
       }
       ai_model_routes: {
-        Row: { tier: string; provider: string | null; model: string | null; enabled: boolean; max_output_tokens: number; timeout_ms: number; updated_at: string }
-        Insert: { tier: string; provider?: string | null; model?: string | null; enabled?: boolean; max_output_tokens?: number; timeout_ms?: number; updated_at?: string }
-        Update: { provider?: string | null; model?: string | null; enabled?: boolean; max_output_tokens?: number; timeout_ms?: number; updated_at?: string }
+        Row: { tier: string; provider: string | null; model: string | null; enabled: boolean; max_output_tokens: number; timeout_ms: number; reasoning_effort: string | null; updated_at: string }
+        Insert: { tier: string; provider?: string | null; model?: string | null; enabled?: boolean; max_output_tokens?: number; timeout_ms?: number; reasoning_effort?: string | null; updated_at?: string }
+        Update: { provider?: string | null; model?: string | null; enabled?: boolean; max_output_tokens?: number; timeout_ms?: number; reasoning_effort?: string | null; updated_at?: string }
         Relationships: []
       }
       notifications: {
@@ -645,8 +645,9 @@ export type Database = {
       }
       ai_record_usage: {
         Args: {
-          p_request_id: string; p_provider: string; p_model: string; p_tier: string; p_tool_name?: string
+          p_request_id: string; p_provider: string; p_model: string; p_tier: string; p_tool_name: string | null
           p_input_tokens: number; p_output_tokens: number; p_latency_ms: number; p_outcome: string
+          p_cached_input_tokens?: number; p_reasoning_tokens?: number
         }
         Returns: number
       }

@@ -86,6 +86,8 @@ describe("AI action safety model", () => {
   it("assistant reports unconfigured when server keys are missing", () => {
     expect(isAssistantConfigured({})).toBe(false);
     expect(isAssistantConfigured({ SUPABASE_SECRET_KEY: "x" })).toBe(false);
-    expect(isAssistantConfigured({ SUPABASE_SECRET_KEY: "x", AI_PROVIDER_ANTHROPIC_KEY: "y" })).toBe(true);
+    expect(isAssistantConfigured({ SUPABASE_SECRET_KEY: "x", AI_PROVIDER_OPENAI_KEY: "y" })).toBe(true);
+    // Anthropic is disabled: its key alone no longer configures the assistant.
+    expect(isAssistantConfigured({ SUPABASE_SECRET_KEY: "x", AI_PROVIDER_ANTHROPIC_KEY: "y" })).toBe(false);
   });
 });

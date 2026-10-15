@@ -1,0 +1,5 @@
+{"id":"cust-create-en-01","lang":"en","prompt":"Add Oakridge Office Park as a customer, contact Thabo 082 111 2222","expect":{"tools":["search_customers","create_customer"],"input":{"displayName":"Oakridge Office Park"},"class":"draft"},"tags":["create_customer"]}
+{"id":"cust-find-af-01","lang":"af","prompt":"Soek vir my die kliënt Mev Smith","expect":{"tools":["search_customers"],"input":{"query":"Smith"},"class":"read"},"tags":["find_customer","afrikaans"]}
+{"id":"cust-archive-mixed-01","lang":"mixed","prompt":"archive asseblief vir Riverside Lodge","expect":{"tools":["search_customers","archive_customer"],"class":"consequential"},"tags":["consequential","mixed"]}
+{"id":"screen-pronoun-01","lang":"en","prompt":"what's their phone number","screen":{"entityType":"customer"},"expect":{"tools":["get_customer"],"class":"read"},"tags":["context"]}
+{"id":"voice-01","lang":"en","prompt":"uh yeah so add a task for tomorrow um quote follow up for abc","expect":{"tools":["create_task"],"class":"draft"},"tags":["voice","create_task"]}

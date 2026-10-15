@@ -1,19 +1,22 @@
 import "server-only";
 import { ProviderError, type AIProvider, type ContentBlock, type ProviderRequest, type ProviderResponse } from "../types";
+import { providerErrorFor } from "./openai";
 
 /**
- * SECOND-PROVIDER INTERFACE (approved D9: built, NOT enabled).
- * No model is on the allowlist for this provider, so the router can never select it.
- * Enabling it requires: allowlisting a model, a priced row in ai_model_prices, an env key,
- * enabling a route row — and a POPIA processor review. Customer data is never sent to a
- * second provider silently.
+ * GENERIC OpenAI-COMPATIBLE adapter (Chat Completions, POST {base}/v1/chat/completions).
+ *
+ * Purpose: future self-hosted / open-weight models (Llama, Qwen, Mistral …) served by vLLM,
+ * TGI, Ollama or llama.cpp, which expose this API shape. Currently used by the "selfhosted"
+ * allowlist entry, which is DISABLED with no approved models.
+ *
+ * The endpoint comes from a server env var named in the allowlist — never from the database.
+ * Not used for OpenAI itself: GPT-6 models need the Responses API for tools (see openai.ts).
  */
 export class OpenAICompatibleProvider implements AIProvider {
-  readonly name = "openai";
-
   constructor(
+    readonly name: string,
     private readonly apiKey: string,
-    private readonly baseUrl: string = "https://api.openai.com",
+    private readonly baseUrl: string,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
 
@@ -47,7 +50,12 @@ export class OpenAICompatibleProvider implements AIProvider {
           max_tokens: req.maxOutputTokens,
           temperature: 0,
           messages,
-          tools: req.tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.inputSchema } })),
+          ...(req.tools.length
+            ? { tools: req.tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.inputSchema } })) }
+            : {}),
+          ...(req.responseFormat
+            ? { response_format: { type: "json_schema", json_schema: { name: req.responseFormat.name, schema: req.responseFormat.schema } } }
+            : {}),
         }),
       });
     } catch (e) {
@@ -56,10 +64,10 @@ export class OpenAICompatibleProvider implements AIProvider {
     } finally {
       clearTimeout(timer);
     }
-    if (!res.ok) throw new ProviderError(res.status === 429 ? "rate_limited" : res.status >= 500 ? "unavailable" : "bad_request", `AI provider returned ${res.status}`, res.status);
+    if (!res.ok) throw providerErrorFor(res.status);
     const body = (await res.json()) as {
       choices?: Array<{ finish_reason?: string; message?: { content?: string | null; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> } }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
+      usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } };
     };
     const choice = body.choices?.[0];
     const content: ContentBlock[] = [];
@@ -76,7 +84,11 @@ export class OpenAICompatibleProvider implements AIProvider {
     return {
       content,
       stopReason: choice?.finish_reason === "tool_calls" ? "tool_use" : choice?.finish_reason === "stop" ? "end_turn" : choice?.finish_reason === "length" ? "max_tokens" : "other",
-      usage: { inputTokens: body.usage?.prompt_tokens ?? 0, outputTokens: body.usage?.completion_tokens ?? 0 },
+      usage: {
+        inputTokens: body.usage?.prompt_tokens ?? 0,
+        outputTokens: body.usage?.completion_tokens ?? 0,
+        cachedInputTokens: body.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      },
     };
   }
 }

@@ -20,6 +20,16 @@ export interface ToolSpec {
   inputSchema: Record<string, unknown>;
 }
 
+/** Reasoning effort levels a route may request. Each model's allowlist entry narrows this further. */
+export type ReasoningEffort = "none" | "low" | "medium" | "high";
+export const REASONING_EFFORTS: readonly ReasoningEffort[] = ["none", "low", "medium", "high"];
+
+/** Ask the model for JSON matching a schema instead of free text (used by extract/classify). */
+export interface ResponseFormat {
+  name: string;
+  schema: Record<string, unknown>;
+}
+
 export interface ProviderRequest {
   model: string;
   system: string;
@@ -27,12 +37,20 @@ export interface ProviderRequest {
   tools: ToolSpec[];
   maxOutputTokens: number;
   timeoutMs: number;
+  /** Omitted for providers/models without reasoning controls. */
+  reasoningEffort?: ReasoningEffort;
+  /** When set, the reply's text block is JSON for this schema. */
+  responseFormat?: ResponseFormat;
 }
 
 export interface ProviderResponse {
   content: ContentBlock[];
   stopReason: "end_turn" | "tool_use" | "max_tokens" | "other";
-  usage: { inputTokens: number; outputTokens: number };
+  /**
+   * inputTokens INCLUDES cachedInputTokens; outputTokens INCLUDES reasoningTokens
+   * (that is how providers bill). The DB prices cached tokens separately.
+   */
+  usage: { inputTokens: number; outputTokens: number; cachedInputTokens?: number; reasoningTokens?: number };
 }
 
 export type ProviderErrorKind = "unavailable" | "timeout" | "auth" | "bad_request" | "rate_limited";

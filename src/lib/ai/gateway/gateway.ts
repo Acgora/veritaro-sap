@@ -1,10 +1,12 @@
 import "server-only";
 import { createServiceClient, type ServiceSupabase } from "@/lib/supabase/service";
 import { logServerError } from "@/lib/errors";
+import { activeProviders, PROVIDER_ALLOWLIST } from "./allowlist";
 import { AnthropicProvider } from "./providers/anthropic";
+import { OpenAIProvider } from "./providers/openai";
 import { OpenAICompatibleProvider } from "./providers/openai-compatible";
 import { resolveRoute, type ResolvedRoute, type RouteRow } from "./router";
-import { ProviderError, type AIProvider, type ChatMessage, type ModelTier, type ProviderResponse, type ToolSpec } from "./types";
+import { ProviderError, type AIProvider, type ChatMessage, type ModelTier, type ProviderResponse, type ResponseFormat, type ToolSpec } from "./types";
 
 export type GatewayFailure =
   | { ok: false; code: "not_configured"; reason: string }
@@ -24,6 +26,8 @@ export interface ModelCall {
   system: string;
   messages: ChatMessage[];
   tools: ToolSpec[];
+  /** Ask for JSON matching this schema (extract/classify capabilities). */
+  responseFormat?: ResponseFormat;
 }
 
 /** Rough, conservative token estimate (≈3 chars/token) used ONLY for budget reservation. */
@@ -39,12 +43,15 @@ export interface GatewayDeps {
   now: () => number;
 }
 
+/** Adapter selection is driven by the allowlist entry, never by the DB. */
 export function defaultProviderFor(route: ResolvedRoute): AIProvider {
-  switch (route.provider) {
-    case "anthropic":
+  switch (route.adapter) {
+    case "openai_responses":
+      return new OpenAIProvider(route.apiKey, route.baseUrl);
+    case "anthropic_messages":
       return new AnthropicProvider(route.apiKey, route.baseUrl);
-    case "openai":
-      return new OpenAICompatibleProvider(route.apiKey, route.baseUrl);
+    case "openai_compatible_chat":
+      return new OpenAICompatibleProvider(route.provider, route.apiKey, route.baseUrl);
   }
 }
 
@@ -64,7 +71,7 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
 
   const { data: routes, error: routeError } = await d.service
     .from("ai_model_routes")
-    .select("tier, provider, model, enabled, max_output_tokens, timeout_ms");
+    .select("tier, provider, model, enabled, max_output_tokens, timeout_ms, reasoning_effort");
   if (routeError) {
     logServerError("ai.routes", routeError);
     return { ok: false, code: "unavailable", reason: "AI configuration could not be loaded." };
@@ -109,6 +116,8 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
       tools: call.tools,
       maxOutputTokens: route.maxOutputTokens,
       timeoutMs: route.timeoutMs,
+      reasoningEffort: route.reasoningEffort,
+      responseFormat: call.responseFormat,
     });
   } catch (e) {
     const kind = e instanceof ProviderError ? e.kind : "unavailable";
@@ -122,9 +131,12 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
     p_model: route.model,
     p_tier: tier,
     // Analytics: the tool(s) the model chose in THIS response (falls back to the caller's hint).
-    p_tool_name: toolsChosen(response) ?? call.toolName ?? undefined,
+    // Must be sent explicitly (null when no tool): PostgREST matches functions by argument names.
+    p_tool_name: toolsChosen(response) ?? call.toolName ?? null,
     p_input_tokens: response?.usage.inputTokens ?? 0,
     p_output_tokens: response?.usage.outputTokens ?? 0,
+    p_cached_input_tokens: response?.usage.cachedInputTokens ?? 0,
+    p_reasoning_tokens: response?.usage.reasoningTokens ?? 0,
     p_latency_ms: Math.max(0, Math.round(d.now() - started)),
     p_outcome: outcome,
   });
@@ -142,7 +154,11 @@ function toolsChosen(r: ProviderResponse | null): string | null {
   return names.length ? [...new Set(names)].join(",").slice(0, 200) : null;
 }
 
-/** True when the server has everything needed to attempt an AI call. */
+/**
+ * True when the server has the metering key and a credential for at least one ACTIVE provider.
+ * Keys of disabled providers (e.g. Anthropic) are not required and are ignored.
+ */
 export function isGatewayConfigured(env: Record<string, string | undefined> = process.env): boolean {
-  return !!env.SUPABASE_SECRET_KEY?.trim() && !!env.AI_PROVIDER_ANTHROPIC_KEY?.trim();
+  if (!env.SUPABASE_SECRET_KEY?.trim()) return false;
+  return activeProviders().some((p) => !!env[PROVIDER_ALLOWLIST[p].envKey]?.trim());
 }

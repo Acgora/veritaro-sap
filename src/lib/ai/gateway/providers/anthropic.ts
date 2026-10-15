@@ -2,6 +2,13 @@ import "server-only";
 import { ProviderError, type AIProvider, type ChatMessage, type ContentBlock, type ProviderRequest, type ProviderResponse } from "../types";
 
 const DEFAULT_BASE_URL = "https://api.anthropic.com";
+const STRUCTURED_TOOL = "emit_structured_result";
+
+/*
+ * Anthropic adapter (Messages API). STATUS: DISABLED in the allowlist since 2026-10-16
+ * (OpenAI is the active provider). Kept, compiled and tested so it can be re-activated by
+ * configuration + deploy without touching business logic.
+ */
 
 type AnthropicBlock =
   | { type: "text"; text: string }
@@ -65,7 +72,15 @@ export class AnthropicProvider implements AIProvider {
           max_tokens: req.maxOutputTokens,
           temperature: 0,
           messages: toAnthropic(req.messages),
-          tools: req.tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema })),
+          ...(req.responseFormat
+            ? {
+                // Structured output via a single forced tool; parsed back into a JSON text block.
+                tools: [{ name: STRUCTURED_TOOL, description: `Return the ${req.responseFormat.name} result.`, input_schema: req.responseFormat.schema }],
+                tool_choice: { type: "tool", name: STRUCTURED_TOOL },
+              }
+            : req.tools.length
+              ? { tools: req.tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema })) }
+              : {}),
         }),
       });
     } catch (e) {
@@ -79,6 +94,13 @@ export class AnthropicProvider implements AIProvider {
       const kind = res.status === 401 || res.status === 403 ? "auth" : res.status === 429 ? "rate_limited" : res.status >= 500 || res.status === 529 ? "unavailable" : "bad_request";
       throw new ProviderError(kind, `AI provider returned ${res.status}`, res.status);
     }
-    return parseAnthropicResponse(await res.json());
+    const parsed = parseAnthropicResponse(await res.json());
+    if (!req.responseFormat) return parsed;
+    const out = parsed.content.find((b) => b.type === "tool_use" && b.name === STRUCTURED_TOOL);
+    return {
+      ...parsed,
+      stopReason: "end_turn",
+      content: out && out.type === "tool_use" ? [{ type: "text", text: JSON.stringify(out.input) }] : parsed.content.filter((b) => b.type === "text"),
+    };
   }
 }

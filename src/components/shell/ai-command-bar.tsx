@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ExternalLink, Mic, Paperclip, SendHorizontal, Sparkles, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -104,11 +104,13 @@ function Replies({ items, onConfirm, onCancel, onUndo, pending }: {
 
 function useAssistantHandlers(a: ReturnType<typeof useAssistant>) {
   const router = useRouter();
+  const pathname = usePathname();
   const [pending, start] = useTransition();
   const ask = (text: string) =>
     start(async () => {
       try {
-        const reply = await askAssistantAction(text, a.conversationId);
+        // Pathname is only a hint; the server re-verifies the entity through RLS.
+        const reply = await askAssistantAction(text, a.conversationId, pathname);
         a.push(text, reply);
         if (reply.cards.length) router.refresh();
       } catch {
