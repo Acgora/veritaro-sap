@@ -85,3 +85,10 @@ describe("member joined wording", () => {
     expect(describeActivity({ action: "member_added", actorType: "user", actorName: "Erin", actorUserId: "u1", metadata: { user_id: "u1", role: "owner" } })).toBe("Erin joined as owner");
   });
 });
+
+import { normaliseSupabaseUrl } from "@/lib/supabase/middleware";
+describe("supabase url normalisation", () => {
+  it("fixes iPad capitalisation, quotes, spaces and trailing slash", () => {
+    expect(normaliseSupabaseUrl(' "Https://ZQIB.supabase.co/" ')).toBe("https://zqib.supabase.co");
+  });
+});
