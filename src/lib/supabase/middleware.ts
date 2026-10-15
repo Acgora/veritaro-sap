@@ -3,13 +3,31 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isAuthPath, isProtectedPath } from "@/lib/routes";
 import type { Database } from "@/types/database.types";
 
+/** Plain diagnostic page instead of Vercel's opaque MIDDLEWARE_INVOCATION_FAILED. No secrets are printed. */
+function configError(message: string) {
+  console.error(`[middleware] ${message}`);
+  return new NextResponse(
+    `<!doctype html><meta name="viewport" content="width=device-width"><body style="font-family:system-ui;padding:2rem;max-width:40rem">
+<h1 style="font-size:1.2rem">Veritaro is not configured correctly</h1><p>${message}</p></body>`,
+    { status: 503, headers: { "content-type": "text/html; charset=utf-8" } },
+  );
+}
+
 export async function updateSession(request: NextRequest) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const missing = [!url && "NEXT_PUBLIC_SUPABASE_URL", !key && "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"].filter(Boolean);
+  if (missing.length > 0) {
+    return configError(`Missing environment variable(s): ${missing.join(", ")}. Add them in Vercel → Settings → Environment Variables, then redeploy.`);
+  }
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url!.trim()) && !url!.startsWith("http://localhost")) {
+    return configError("NEXT_PUBLIC_SUPABASE_URL is not a valid Supabase URL (expected https://<ref>.supabase.co with no spaces or path).");
+  }
+
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
+  try {
+    const supabase = createServerClient<Database>(url!.trim(), key!.trim(), {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (toSet) => {
@@ -18,29 +36,32 @@ export async function updateSession(request: NextRequest) {
           toSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
-    },
-  );
+    });
 
-  // getUser() validates the JWT with Supabase Auth (getSession() would trust the cookie).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    // getUser() validates the JWT with Supabase Auth (getSession() would trust the cookie).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const { pathname, search } = request.nextUrl;
+    const { pathname, search } = request.nextUrl;
 
-  if (!user && isProtectedPath(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `?next=${encodeURIComponent(pathname + search)}`;
-    return NextResponse.redirect(url);
+    if (!user && isProtectedPath(pathname)) {
+      const to = request.nextUrl.clone();
+      to.pathname = "/login";
+      to.search = `?next=${encodeURIComponent(pathname + search)}`;
+      return NextResponse.redirect(to);
+    }
+
+    if (user && isAuthPath(pathname)) {
+      const to = request.nextUrl.clone();
+      to.pathname = "/app/today";
+      to.search = "";
+      return NextResponse.redirect(to);
+    }
+
+    return response;
+  } catch (error) {
+    const e = error as { name?: string; message?: string };
+    return configError(`Could not reach Supabase Auth (${e?.name ?? "Error"}). Check the Supabase URL and publishable key in Vercel.`);
   }
-
-  if (user && isAuthPath(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/app/today";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-
-  return response;
 }
