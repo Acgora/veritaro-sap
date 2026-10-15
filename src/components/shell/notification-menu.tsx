@@ -59,7 +59,7 @@ export function NotificationMenu({ notifications }: { notifications: ShellData["
                     {n.title}
                   </p>
                   {n.message ? <p className="truncate text-sm text-muted-foreground">{n.message}</p> : null}
-                  <p className="mt-0.5 text-xs text-muted-foreground">{formatRelative(n.created_at)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground" suppressHydrationWarning>{formatRelative(n.created_at)}</p>
                 </li>
               ))}
             </ul>

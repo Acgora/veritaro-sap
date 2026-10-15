@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "Leads", href: "/app/sales/leads", live: false },
       { label: "Quotes", href: "/app/sales/quotes", live: false },
-      { label: "Customers", href: "/app/sales/customers", live: false },
+      { label: "Customers", href: "/app/sales/customers", live: true },
     ],
   },
   {
@@ -61,6 +61,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: "Members", href: "/app/settings/members", live: true },
       { label: "My profile", href: "/app/settings/profile", live: true },
       { label: "Preferences", href: "/app/settings/preferences", live: true },
+      { label: "AI usage", href: "/app/settings/ai", live: true },
     ],
   },
 ];
@@ -79,7 +80,7 @@ export interface QuickCreateItem {
 
 export const QUICK_CREATE_ITEMS: QuickCreateItem[] = [
   { key: "task", label: "Task", icon: CheckSquare, live: true, href: "/app/work/tasks?new=1", permission: "tasks.create" },
-  { key: "customer", label: "Customer", icon: UserRound, live: false, href: "/app/new/customer" },
+  { key: "customer", label: "Customer", icon: UserRound, live: true, href: "/app/sales/customers?new=1", permission: "customers.create" },
   { key: "lead", label: "Lead", icon: Target, live: false, href: "/app/new/lead" },
   { key: "quote", label: "Quote", icon: FileSignature, live: false, href: "/app/new/quote" },
   { key: "invoice", label: "Invoice", icon: Receipt, live: false, href: "/app/new/invoice" },
@@ -99,7 +100,7 @@ export const MOBILE_QUICK_ACTIONS: { key: string; label: string; href: string; l
   { key: "task", label: "Create task", href: "/app/work/tasks?new=1", live: true, icon: CheckSquare },
   { key: "quote", label: "Create quote", href: "/app/new/quote", live: false, icon: FileSignature },
   { key: "invoice", label: "Create invoice", href: "/app/new/invoice", live: false, icon: Receipt },
-  { key: "customer", label: "Create customer", href: "/app/new/customer", live: false, icon: UserRound },
+  { key: "customer", label: "Create customer", href: "/app/sales/customers?new=1", live: true, icon: UserRound },
   { key: "expense", label: "Create expense", href: "/app/new/expense", live: false, icon: Wallet },
 ];
 

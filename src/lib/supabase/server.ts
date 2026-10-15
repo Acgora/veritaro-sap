@@ -26,4 +26,21 @@ export async function createClient() {
   });
 }
 
+/**
+ * Same user-bound, RLS-enforced client, but every request carries x-veritaro-actor: ai so
+ * the database records AI-originated changes with actor_type = 'ai' (still tied to the user).
+ */
+export async function createAIClient() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(publicEnv.supabaseUrl, publicEnv.supabaseKey, {
+    global: { headers: { "x-veritaro-actor": "ai" } },
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+      setAll: () => {
+        /* AI calls never refresh the session; middleware does. */
+      },
+    },
+  });
+}
+
 export type ServerSupabase = Awaited<ReturnType<typeof createClient>>;

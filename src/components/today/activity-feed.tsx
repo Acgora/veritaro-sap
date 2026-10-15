@@ -24,7 +24,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
           <div className="min-w-0 text-sm">
             <p className="leading-snug">{describeActivity(item)}</p>
             <p className="text-xs text-muted-foreground">
-              <time dateTime={item.createdAt}>{formatRelative(item.createdAt)}</time>
+              <time dateTime={item.createdAt} suppressHydrationWarning>{formatRelative(item.createdAt)}</time>
             </p>
           </div>
         </li>

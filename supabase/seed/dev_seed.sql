@@ -14,6 +14,7 @@
   \echo 'Refusing to seed: pass -v allow_dev_seed=on (development databases only).'
   \quit
 \endif
+\set ON_ERROR_STOP 1
 
 begin;
 
@@ -25,7 +26,7 @@ end $$;
 
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
 select '00000000-0000-0000-0000-000000000000', u.id::uuid, 'authenticated', 'authenticated', u.email,
-       crypt('DevPassw0rd!', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb,
+       extensions.crypt('DevPassw0rd!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb,
        jsonb_build_object('first_name', u.first_name, 'last_name', 'Demo'), now(), now(), '', '', '', ''
 from (values
   ('d0000000-0000-4000-8000-000000000001', 'owner@seed.veritaro.test',      'Olivia'),
@@ -68,10 +69,22 @@ declare
   org uuid := 'd1000000-0000-4000-8000-000000000001';
 begin
   perform set_config('request.jwt.claim.sub', 'd0000000-0000-4000-8000-000000000001', true);
+  insert into public.customers (id, organisation_id, type, display_name, email, phone, vat_number) values
+    ('d2000000-0000-4000-8000-000000000001', org, 'business', '[Demo] Oakridge Office Park', 'facilities@oakridge.test', '021 555 0101', '4000000001'),
+    ('d2000000-0000-4000-8000-000000000002', org, 'individual', '[Demo] Mrs J. Smith', null, '082 555 0202', null)
+  on conflict (id) do nothing;
+  insert into public.customer_contacts (organisation_id, customer_id, first_name, last_name, role, phone, is_primary)
+  values (org, 'd2000000-0000-4000-8000-000000000001', 'Thabo', 'Demo', 'Facilities manager', '082 555 0303', true)
+  on conflict do nothing;
+  insert into public.customer_addresses (organisation_id, customer_id, kind, label, line1, city)
+  values (org, 'd2000000-0000-4000-8000-000000000001', 'site', 'Block A', '1 Demo Road', 'Stellenbosch');
   insert into public.tasks (organisation_id, title, priority, due_at, assigned_to, created_by) values
     (org, '[Demo] Follow up office-cleaning quote', 'high', now() + interval '3 hours', 'd0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001'),
     (org, '[Demo] Restock chemicals van 2', 'normal', now() + interval '1 day', 'd0000000-0000-4000-8000-000000000005', 'd0000000-0000-4000-8000-000000000001'),
     (org, '[Demo] Renew public liability insurance', 'urgent', now() - interval '2 days', 'd0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000001');
+  insert into public.tasks (organisation_id, title, assigned_to, created_by, related_entity_type, related_entity_id)
+  values (org, '[Demo] Deep clean Block A', 'd0000000-0000-4000-8000-000000000005', 'd0000000-0000-4000-8000-000000000001',
+          'customer', 'd2000000-0000-4000-8000-000000000001');
   perform set_config('request.jwt.claim.sub', 'd0000000-0000-4000-8000-000000000007', true);
   insert into public.tasks (organisation_id, title, created_by) values
     ('d1000000-0000-4000-8000-000000000002', '[Demo] Other org — must never be visible to Demo Cleaning Co', 'd0000000-0000-4000-8000-000000000007');

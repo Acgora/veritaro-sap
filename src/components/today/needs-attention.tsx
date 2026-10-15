@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Banknote, Briefcase, CalendarCheck, FileSignature, Target, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Banknote, Briefcase, CalendarCheck, FileSignature, Target, UserPlus, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Tile {
@@ -35,11 +35,12 @@ function AttentionTile({ tile }: { tile: Tile }) {
   );
 }
 
-export function NeedsAttention({ overdueTasks, dueTodayTasks }: { overdueTasks: number; dueTodayTasks: number }) {
+export function NeedsAttention({ overdueTasks, dueTodayTasks, newCustomers }: { overdueTasks: number; dueTodayTasks: number; newCustomers: number | null }) {
   const tiles: Tile[] = [
     { label: "Overdue tasks", icon: AlertTriangle, href: "/app/work/tasks", value: overdueTasks, hint: overdueTasks ? "Past their due date" : "Nothing overdue", tone: "warning" },
     { label: "Tasks due today", icon: CalendarCheck, href: "/app/work/tasks", value: dueTodayTasks, hint: dueTodayTasks ? "Due before midnight" : "Nothing due today" },
     { label: "Outstanding money", icon: Banknote, href: "/app/money/invoices", value: null, hint: "Available once invoicing is live" },
+    { label: "New customers this week", icon: UserPlus, href: "/app/sales/customers", value: newCustomers, hint: newCustomers === null ? "Not available for your role" : newCustomers ? "Added in the last 7 days" : "None added this week" },
     { label: "New leads", icon: Target, href: "/app/sales/leads", value: null, hint: "Available once leads are live" },
     { label: "Jobs today", icon: Briefcase, href: "/app/work/jobs", value: null, hint: "Available once jobs are live" },
     { label: "Quotes to follow up", icon: FileSignature, href: "/app/sales/quotes", value: null, hint: "Available once quotes are live" },

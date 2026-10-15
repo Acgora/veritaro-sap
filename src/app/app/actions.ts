@@ -6,7 +6,14 @@ import { ACTIVE_ORG_COOKIE, getMemberships } from "@/lib/context";
 import { createClient } from "@/lib/supabase/server";
 import { getServiceContext } from "@/lib/service-context";
 import { markAllNotificationsRead } from "@/domain/notifications/service";
-import { handleCommand, type CommandResponse } from "@/lib/ai/command-service";
+import { createAIClient } from "@/lib/supabase/server";
+import { requireAppContext } from "@/lib/context";
+import {
+  cancelAssistantAction, confirmAssistantAction, handleAssistantMessage, type AssistantReply,
+} from "@/lib/ai/orchestrator";
+import { archiveCustomer } from "@/domain/customers/service";
+import { archiveTask } from "@/domain/tasks/service";
+import type { ServiceContext } from "@/domain/context";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 
 export async function switchOrganisationAction(organisationId: string): Promise<ActionResult<null>> {
@@ -34,7 +41,48 @@ export async function signOutAction() {
   redirect("/login");
 }
 
-export async function askAssistantAction(text: string): Promise<CommandResponse> {
-  await getServiceContext(); // ensures an authenticated member; future: passed to the AI executor
-  return handleCommand(text.slice(0, 4000));
+async function aiServiceContext(): Promise<{ ctx: ServiceContext; app: Awaited<ReturnType<typeof requireAppContext>> }> {
+  const app = await requireAppContext();
+  const supabase = await createAIClient();
+  return {
+    app,
+    ctx: { supabase, organisationId: app.organisation.id, userId: app.userId, permissions: app.permissions, actor: "ai" },
+  };
+}
+
+export async function askAssistantAction(text: string, conversationId?: string): Promise<AssistantReply> {
+  const { ctx, app } = await aiServiceContext();
+  const reply = await handleAssistantMessage(
+    {
+      ctx,
+      organisationName: app.organisation.name,
+      timezone: app.organisation.timezone,
+      currency: app.organisation.currency,
+      userFirstName: app.profile.first_name,
+    },
+    String(text ?? "").slice(0, 2000),
+    typeof conversationId === "string" ? conversationId : undefined,
+  );
+  if (reply.cards.length || reply.status === "answer") revalidatePath("/app", "layout");
+  return reply;
+}
+
+export async function confirmAssistantActionAction(actionId: string): Promise<AssistantReply> {
+  const { ctx } = await aiServiceContext();
+  const reply = await confirmAssistantAction(ctx, String(actionId));
+  revalidatePath("/app", "layout");
+  return reply;
+}
+
+export async function cancelAssistantActionAction(actionId: string): Promise<AssistantReply> {
+  const { ctx } = await aiServiceContext();
+  return cancelAssistantAction(ctx, String(actionId));
+}
+
+/** Undo an AI-created draft (customer → archive within the DB's 15-minute creator window; task → archive). */
+export async function undoAssistantCardAction(kind: "customer" | "task", id: string): Promise<ActionResult<{ id: string }>> {
+  const ctx = await getServiceContext();
+  const r = kind === "customer" ? await archiveCustomer(ctx, String(id)) : await archiveTask(ctx, String(id));
+  revalidatePath("/app", "layout");
+  return r;
 }

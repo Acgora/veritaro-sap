@@ -74,7 +74,7 @@ select tests.ok((select display_name from public.profiles where id = 'a0000000-0
                 'profile display_name built from metadata');
 
 -- Keys in TS must match DB (src/lib/permissions/keys.ts). Count guard:
-select tests.ok((select count(*) from public.permissions) = 23, 'permission catalogue has expected size (sync with keys.ts)');
+select tests.ok((select count(*) from public.permissions) = 30, 'permission catalogue has expected size (sync with keys.ts)');
 select tests.ok((select count(*) from public.roles) = 6, 'six system roles');
 
 -- ---------------------------------------------------------------------------

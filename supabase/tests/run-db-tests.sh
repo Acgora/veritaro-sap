@@ -11,6 +11,8 @@ for f in "$DIR"/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"
 done
 echo "→ running RLS / tenancy tests"
-OUT=$(psql -q -t -A -v ON_ERROR_STOP=1 -d "$DB" -f "$DIR/tests/rls.test.sql" 2>&1) || { echo "$OUT" | grep -E "ERROR|FAILED" ; echo "✘ database tests FAILED"; exit 1; }
-echo "$OUT" | grep "assertions passed"
+for t in "$DIR"/tests/*.test.sql; do
+  OUT=$(psql -q -t -A -v ON_ERROR_STOP=1 -d "$DB" -f "$t" 2>&1) || { echo "$OUT" | grep -E "ERROR|FAILED" ; echo "✘ database tests FAILED in $(basename "$t")"; exit 1; }
+  echo "  $(basename "$t"): $(echo "$OUT" | grep "assertions passed" | tail -1)"
+done
 echo "✔ database tests passed"

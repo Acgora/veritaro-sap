@@ -49,7 +49,7 @@ Then add a guard trigger forbidding `organisation_id` changes, an audit trigger 
 
 ## Verification
 
-- `npm run test:db` — 87 assertions incl. cross-tenant read/write/insert/update/delete denial for every table, role escalation attempts, anon lockout, append-only audit, SECURITY DEFINER `search_path` hygiene.
+- `npm run test:db` — 159 assertions (Phase 001 + `rls_phase2.test.sql`) incl. cross-tenant read/write/insert/update/delete denial for every table, role escalation attempts, anon lockout, append-only audit, SECURITY DEFINER `search_path` hygiene.
 - Hosted project: a rolled-back transaction smoke test (11 checks) passed on 2026-10-14; Supabase security advisor reports only the intentional `create_organisation` SECURITY DEFINER RPC.
 
 ## Known trade-offs
@@ -57,3 +57,10 @@ Then add a guard trigger forbidding `organisation_id` changes, an audit trigger 
 - The active-organisation cookie is a UI preference; every query still filters by `organisation_id` **and** RLS checks membership.
 - Deleting an auth user cascades their memberships without the last-owner guard (platform path). An organisation can be left ownerless; recovery is an admin/support task.
 - Suspended/invited members lose all access immediately (policies require `status = 'active'`).
+
+## Phase 002 additions
+
+- Customers/contacts/addresses: read via `customers.read`, or `customers.read_linked` limited to `app_private.linked_customer_ids()`. Writes need create/update; archive is a guarded update (no hard delete for non-admins).
+- AI server tables (`ai_requests`, `ai_usage_monthly`, routes, prices, plans, limits) have RLS on with **no policies** — reachable only by service_role. Advisor reports this as INFO; intentional.
+- `ai_conversations/messages/actions`: a user sees only their own rows in orgs where they are active.
+- All `app_private` functions: EXECUTE revoked from `anon`.

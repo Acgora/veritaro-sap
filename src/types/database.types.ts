@@ -65,6 +65,213 @@ export type Database = {
           },
         ]
       }
+      customers: {
+        Row: {
+          id: string
+          organisation_id: string
+          type: string
+          display_name: string
+          legal_name: string | null
+          registration_number: string | null
+          vat_number: string | null
+          email: string | null
+          phone: string | null
+          website: string | null
+          payment_terms_days: number
+          preferred_channel: string | null
+          notes: string | null
+          status: string
+          source: string
+          email_normalized: string | null
+          phone_normalized: string | null
+          vat_normalized: string | null
+          archived_at: string | null
+          archived_by: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organisation_id: string
+          type?: string
+          display_name: string
+          legal_name?: string | null
+          registration_number?: string | null
+          vat_number?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          payment_terms_days?: number
+          preferred_channel?: string | null
+          notes?: string | null
+          status?: string
+          source?: string
+          archived_at?: string | null
+          archived_by?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organisation_id?: string
+          type?: string
+          display_name?: string
+          legal_name?: string | null
+          registration_number?: string | null
+          vat_number?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          payment_terms_days?: number
+          preferred_channel?: string | null
+          notes?: string | null
+          status?: string
+          source?: string
+          archived_at?: string | null
+          archived_by?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "customers_organisation_id_fkey"; columns: ["organisation_id"]; isOneToOne: false; referencedRelation: "organisations"; referencedColumns: ["id"] },
+          { foreignKeyName: "customers_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      customer_contacts: {
+        Row: {
+          id: string
+          organisation_id: string
+          customer_id: string
+          first_name: string
+          last_name: string | null
+          role: string | null
+          email: string | null
+          phone: string | null
+          whatsapp_opt_in: boolean
+          is_primary: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organisation_id: string
+          customer_id: string
+          first_name: string
+          last_name?: string | null
+          role?: string | null
+          email?: string | null
+          phone?: string | null
+          whatsapp_opt_in?: boolean
+          is_primary?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          first_name?: string
+          last_name?: string | null
+          role?: string | null
+          email?: string | null
+          phone?: string | null
+          whatsapp_opt_in?: boolean
+          is_primary?: boolean
+        }
+        Relationships: [
+          { foreignKeyName: "customer_contacts_customer_fk"; columns: ["customer_id", "organisation_id"]; isOneToOne: false; referencedRelation: "customers"; referencedColumns: ["id", "organisation_id"] },
+        ]
+      }
+      customer_addresses: {
+        Row: {
+          id: string
+          organisation_id: string
+          customer_id: string
+          kind: string
+          label: string | null
+          line1: string
+          line2: string | null
+          suburb: string | null
+          city: string | null
+          province: string | null
+          postal_code: string | null
+          country: string
+          notes: string | null
+          is_default_billing: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organisation_id: string
+          customer_id: string
+          kind?: string
+          label?: string | null
+          line1: string
+          line2?: string | null
+          suburb?: string | null
+          city?: string | null
+          province?: string | null
+          postal_code?: string | null
+          country?: string
+          notes?: string | null
+          is_default_billing?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          kind?: string
+          label?: string | null
+          line1?: string
+          line2?: string | null
+          suburb?: string | null
+          city?: string | null
+          province?: string | null
+          postal_code?: string | null
+          country?: string
+          notes?: string | null
+          is_default_billing?: boolean
+        }
+        Relationships: [
+          { foreignKeyName: "customer_addresses_customer_fk"; columns: ["customer_id", "organisation_id"]; isOneToOne: false; referencedRelation: "customers"; referencedColumns: ["id", "organisation_id"] },
+        ]
+      }
+      ai_conversations: {
+        Row: { id: string; organisation_id: string; user_id: string; title: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; organisation_id: string; user_id: string; title?: string | null; created_at?: string; updated_at?: string }
+        Update: { title?: string | null; updated_at?: string }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: { id: string; organisation_id: string; user_id: string; conversation_id: string; role: string; content: string; created_at: string }
+        Insert: { id?: string; organisation_id: string; user_id: string; conversation_id: string; role: string; content: string; created_at?: string }
+        Update: { content?: string }
+        Relationships: []
+      }
+      ai_actions: {
+        Row: {
+          id: string; organisation_id: string; user_id: string; conversation_id: string; tool_name: string
+          action_class: string; input: Json; summary: string | null; status: string; result: Json | null
+          created_at: string; decided_at: string | null
+        }
+        Insert: {
+          id?: string; organisation_id: string; user_id: string; conversation_id: string; tool_name: string
+          action_class: string; input?: Json; summary?: string | null; status: string; result?: Json | null
+          created_at?: string; decided_at?: string | null
+        }
+        Update: { status?: string; result?: Json | null; decided_at?: string | null }
+        Relationships: []
+      }
+      ai_model_routes: {
+        Row: { tier: string; provider: string | null; model: string | null; enabled: boolean; max_output_tokens: number; timeout_ms: number; updated_at: string }
+        Insert: { tier: string; provider?: string | null; model?: string | null; enabled?: boolean; max_output_tokens?: number; timeout_ms?: number; updated_at?: string }
+        Update: { provider?: string | null; model?: string | null; enabled?: boolean; max_output_tokens?: number; timeout_ms?: number; updated_at?: string }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -420,6 +627,30 @@ export type Database = {
     }
     Views: { [_ in never]: never }
     Functions: {
+      create_customer: {
+        Args: { p_organisation_id: string; p_customer: Json; p_contact?: Json; p_address?: Json }
+        Returns: string
+      }
+      find_customer_duplicates: {
+        Args: { p_organisation_id: string; p_name?: string; p_email?: string; p_phone?: string; p_vat?: string; p_exclude_id?: string }
+        Returns: { id: string; display_name: string; status: string; reason: string; score: number }[]
+      }
+      ai_usage_summary: { Args: { p_organisation_id: string }; Returns: Json }
+      ai_begin_request: {
+        Args: {
+          p_organisation_id: string; p_user_id: string; p_provider: string; p_model: string
+          p_category: string; p_est_input_tokens: number; p_max_output_tokens: number
+        }
+        Returns: Json
+      }
+      ai_record_usage: {
+        Args: {
+          p_request_id: string; p_provider: string; p_model: string; p_tier: string; p_tool_name?: string
+          p_input_tokens: number; p_output_tokens: number; p_latency_ms: number; p_outcome: string
+        }
+        Returns: number
+      }
+      ai_finish_request: { Args: { p_request_id: string; p_status: string }; Returns: Json }
       create_organisation: {
         Args: {
           p_country?: string

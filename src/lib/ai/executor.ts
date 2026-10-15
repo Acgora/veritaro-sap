@@ -41,7 +41,8 @@ export async function executeTool(
   if (!parsed.success) return { status: "invalid_input", reason: "The request was missing or had invalid details." };
 
   const missing = tool.requiredPermissions.filter((p) => !ctx.permissions.can(p));
-  if (missing.length > 0) return { status: "denied", reason: "You don't have permission to do that." };
+  const anyOk = !tool.requiredAnyOf || tool.requiredAnyOf.some((p) => ctx.permissions.can(p));
+  if (missing.length > 0 || !anyOk) return { status: "denied", reason: "You don't have permission to do that." };
 
   if (ACTION_CLASS_POLICY[tool.actionClass].requiresConfirmation) {
     const fp = fingerprint(tool.name, parsed.data);
@@ -51,12 +52,14 @@ export async function executeTool(
       confirmation.inputFingerprint === fp &&
       confirmation.confirmedByUserId === ctx.userId;
     if (!valid) {
-      return { status: "needs_confirmation", actionClass: "consequential", summary: tool.summarise(parsed.data), inputFingerprint: fp };
+      const summary = tool.describe ? await tool.describe(ctx, parsed.data).catch(() => tool.summarise(parsed.data)) : tool.summarise(parsed.data);
+      return { status: "needs_confirmation", actionClass: "consequential", summary, inputFingerprint: fp, input: parsed.data as Record<string, unknown> };
     }
   }
 
   const aiCtx: ServiceContext = { ...ctx, actor: "ai" };
   const result = await tool.execute(aiCtx, parsed.data);
   if (!result.ok) return { status: "error", reason: result.error };
-  return { status: "executed", actionClass: tool.actionClass, result: result.data };
+  const card = tool.card ? tool.card(parsed.data, result.data) : null;
+  return { status: "executed", actionClass: tool.actionClass, result: result.data, card };
 }

@@ -23,3 +23,6 @@ grant usage on schema public to anon, authenticated, service_role;
 -- Emulate Supabase's platform-wide default privileges (functions/tables auto-granted to API roles).
 alter default privileges grant execute on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+-- Supabase installs extensions into the "extensions" schema.
+create schema if not exists extensions;
+grant usage on schema extensions to anon, authenticated, service_role;

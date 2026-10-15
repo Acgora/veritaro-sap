@@ -1,5 +1,8 @@
 import type { AIToolDefinition, PlannedTool } from "./types";
-import { createTaskTool, listOpenTasksTool } from "./tools/tasks";
+import { completeTaskTool, createTaskTool, listOpenTasksTool } from "./tools/tasks";
+import {
+  addContactTool, addSiteAddressTool, archiveCustomerTool, createCustomerTool, getCustomerTool, searchCustomersTool, updateCustomerTool,
+} from "./tools/customers";
 
 /**
  * Registered (executable) AI tools. To add a tool:
@@ -9,14 +12,24 @@ import { createTaskTool, listOpenTasksTool } from "./tools/tasks";
  *  4. register it below and add a unit test in tests/unit/ai.test.ts
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous registry; inputs validated by each tool's schema
-export const AI_TOOLS: ReadonlyArray<AIToolDefinition<any, any>> = [createTaskTool, listOpenTasksTool];
+export const AI_TOOLS: ReadonlyArray<AIToolDefinition<any, any>> = [
+  searchCustomersTool,
+  getCustomerTool,
+  createCustomerTool,
+  updateCustomerTool,
+  addContactTool,
+  addSiteAddressTool,
+  archiveCustomerTool,
+  listOpenTasksTool,
+  createTaskTool,
+  completeTaskTool,
+];
 
 /** Designed in the product spec; intentionally NOT executable yet. */
 export const PLANNED_AI_TOOLS: ReadonlyArray<PlannedTool> = [
   { name: "create_quote", actionClass: "draft", phase: "future", description: "Draft a quote for a customer" },
   { name: "create_invoice", actionClass: "draft", phase: "future", description: "Draft an invoice" },
   { name: "record_expense", actionClass: "draft", phase: "future", description: "Record an expense from a receipt" },
-  { name: "create_customer", actionClass: "draft", phase: "future", description: "Create a customer record" },
   { name: "schedule_job", actionClass: "draft", phase: "future", description: "Schedule a job" },
   { name: "search_messages", actionClass: "read", phase: "future", description: "Search conversations" },
   { name: "send_whatsapp", actionClass: "consequential", phase: "future", description: "Send a WhatsApp message" },

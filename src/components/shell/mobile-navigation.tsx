@@ -21,8 +21,10 @@ export function MobileNavigation({ permissions }: { permissions: string[] }) {
   const nav = visibleNav(permissions);
   const primary = MOBILE_PRIMARY_KEYS.map((k) => nav.find((n) => n.key === k)).filter((n) => n !== undefined);
   const more = nav.filter((n) => !(MOBILE_PRIMARY_KEYS as readonly string[]).includes(n.key));
-  const canCreateTask = new PermissionSet(permissions).can("tasks.create");
-  const actions = MOBILE_QUICK_ACTIONS.filter((a) => a.key !== "task" || canCreateTask);
+  const perms = new PermissionSet(permissions);
+  const actions = MOBILE_QUICK_ACTIONS.filter(
+    (a) => (a.key !== "task" || perms.can("tasks.create")) && (a.key !== "customer" || perms.can("customers.create")) && (a.key !== "ask" || perms.can("ai.use")),
+  );
 
   const tab = (href: string, label: string, Icon: React.ComponentType<{ className?: string }>) => {
     const active = isNavActive(pathname, href);

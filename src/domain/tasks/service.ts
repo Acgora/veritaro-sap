@@ -74,6 +74,8 @@ export async function createTask(ctx: ServiceContext, input: CreateTaskInput): P
       priority: v.priority,
       due_at: v.dueAt,
       assigned_to: v.assignedTo,
+      related_entity_type: v.customerId ? "customer" : null,
+      related_entity_id: v.customerId,
     })
     .select("id")
     .single();
@@ -104,6 +106,10 @@ export async function updateTask(
   if (input.dueAt !== undefined) patch.due_at = v.dueAt ?? null;
   if (input.assignedTo !== undefined) patch.assigned_to = v.assignedTo ?? null;
   if (v.status !== undefined) patch.status = v.status;
+  if (input.customerId !== undefined) {
+    patch.related_entity_type = v.customerId ? "customer" : null;
+    patch.related_entity_id = v.customerId ?? null;
+  }
 
   if (Object.keys(patch).length === 0) return ok({ id: taskId });
 

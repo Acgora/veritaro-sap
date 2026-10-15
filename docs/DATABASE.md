@@ -56,4 +56,13 @@ auth.users ──1:1── profiles ──< organisation_members >── organis
 | `20261014000400_security_rls.sql` | helpers, guards, audit triggers, RPCs, grants, RLS policies |
 | `20261014000500_harden_function_grants.sql` | removes platform-default EXECUTE grants from `anon`; `get_my_permissions` → invoker |
 
-All five are applied to the hosted project and verified identical (function bodies, policies, triggers, role mappings fingerprinted local vs hosted).
+Phase 001: all five are applied to the hosted project and verified identical (function bodies, policies, triggers, role mappings fingerprinted local vs hosted).
+
+### Phase 002
+
+| File | Content |
+|---|---|
+| `20261015000100_customers.sql` | 7 permissions; `customers`, `customer_contacts`, `customer_addresses` (normalised email/phone/VAT generated columns, composite FKs to keep children in-org); guards (archive rules, `source='ai'` only via AI header); audit triggers; tasks may link to `customer`; RPCs `find_customer_duplicates` (trigram ≥ 0.45, phone last 9 digits) and `create_customer` (atomic, invoker) |
+| `20261015000200_ai_gateway.sql` | `ai_model_routes`, `ai_model_prices`, `ai_plans`, `ai_org_limits`, `ai_usage_monthly`, `ai_requests`, `ai_usage_events` (append-only), `ai_conversations`, `ai_messages`, `ai_actions`; metering RPCs (service_role only); `ai_usage_summary` (definer, checks `ai.usage_read`) |
+
+Both applied to the hosted project 2026-10-15 and fingerprint-verified identical to local.

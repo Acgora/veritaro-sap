@@ -40,3 +40,38 @@ export async function listRecentActivity(ctx: ServiceContext, limit = 15): Promi
     })),
   );
 }
+
+/** Timeline for one record (e.g. a customer). */
+export async function listActivityForEntity(
+  ctx: ServiceContext,
+  entityType: string,
+  entityId: string,
+  limit = 30,
+): Promise<ActionResult<ActivityItem[]>> {
+  if (!ctx.permissions.can("activity.read")) return ok([]);
+  const { data, error } = await ctx.supabase
+    .from("activity_log")
+    .select("id, action, actor_type, actor_user_id, entity_type, entity_id, metadata, created_at, actor:profiles!activity_log_actor_user_id_fkey(display_name, first_name)")
+    .eq("organisation_id", ctx.organisationId)
+    .eq("entity_type", entityType)
+    .eq("entity_id", entityId)
+    .order("created_at", { ascending: false })
+    .limit(Math.min(limit, 100));
+  if (error) {
+    logServerError("activity.entity", error);
+    return fail(toUserMessage(error, "We couldn't load the history."));
+  }
+  return ok(
+    (data ?? []).map((a) => ({
+      id: a.id,
+      action: a.action,
+      actorType: a.actor_type,
+      actorName: a.actor?.display_name || a.actor?.first_name || null,
+      actorUserId: a.actor_user_id,
+      entityType: a.entity_type,
+      entityId: a.entity_id,
+      metadata: (a.metadata && typeof a.metadata === "object" && !Array.isArray(a.metadata) ? a.metadata : {}) as Record<string, Json | undefined>,
+      createdAt: a.created_at,
+    })),
+  );
+}

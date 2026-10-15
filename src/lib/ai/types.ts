@@ -33,11 +33,23 @@ export interface AIToolDefinition<TSchema extends z.ZodType = z.ZodType, TOutput
   actionClass: ActionClass;
   /** User must hold ALL of these (checked before execution; RLS still applies). */
   requiredPermissions: Permission[];
+  /** …and at least ONE of these, when set (e.g. customers.read OR customers.read_linked). */
+  requiredAnyOf?: Permission[];
   inputSchema: TSchema;
   /** Must call the SAME domain service the UI uses. Never re-implement logic here. */
   execute: (ctx: ServiceContext, input: z.output<TSchema>) => Promise<ActionResult<TOutput>>;
   /** Human-readable preview shown in the confirmation dialog. */
   summarise: (input: z.output<TSchema>) => string;
+  /** Optional richer preview built from real data (e.g. the customer's actual name). */
+  describe?: (ctx: ServiceContext, input: z.output<TSchema>) => Promise<string>;
+  /** Optional UI card for a successful result (link + undo). */
+  card?: (input: z.output<TSchema>, output: TOutput) => AICard | null;
+}
+
+export interface AICard {
+  label: string;
+  href: string;
+  undo?: { kind: "customer" | "task"; id: string };
 }
 
 /** Capabilities from the product spec that are designed but NOT implemented. */
@@ -56,8 +68,8 @@ export interface ConfirmationGrant {
 }
 
 export type ToolExecutionOutcome<T = unknown> =
-  | { status: "executed"; actionClass: ActionClass; result: T }
-  | { status: "needs_confirmation"; actionClass: "consequential"; summary: string; inputFingerprint: string }
+  | { status: "executed"; actionClass: ActionClass; result: T; card?: AICard | null }
+  | { status: "needs_confirmation"; actionClass: "consequential"; summary: string; inputFingerprint: string; input: Record<string, unknown> }
   | { status: "denied"; reason: string }
   | { status: "invalid_input"; reason: string }
   | { status: "unknown_tool"; reason: string }

@@ -5,6 +5,7 @@ import { getServiceContext } from "@/lib/service-context";
 import { dayBoundsInZone, formatLongDate, greetingFor } from "@/lib/dates";
 import { getTaskCounts, listTasksDueBetween } from "@/domain/tasks/service";
 import { listRecentActivity } from "@/domain/activity/service";
+import { countCustomersCreatedSince } from "@/domain/customers/service";
 import { NeedsAttention } from "@/components/today/needs-attention";
 import { AIBriefing } from "@/components/today/ai-briefing";
 import { TodaySchedule } from "@/components/today/today-schedule";
@@ -17,9 +18,19 @@ export const metadata: Metadata = { title: "Today" };
 
 async function AttentionBlock({ start, end }: { start: string; end: string }) {
   const ctx = await getServiceContext();
-  const counts = await getTaskCounts(ctx, start, end);
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const [counts, newCustomers] = await Promise.all([
+    getTaskCounts(ctx, start, end),
+    ctx.permissions.can("customers.read") ? countCustomersCreatedSince(ctx, weekAgo) : Promise.resolve(null),
+  ]);
   if (!counts.ok) return <ErrorState message={counts.error} />;
-  return <NeedsAttention overdueTasks={counts.data.overdue} dueTodayTasks={counts.data.dueToday} />;
+  return (
+    <NeedsAttention
+      overdueTasks={counts.data.overdue}
+      dueTodayTasks={counts.data.dueToday}
+      newCustomers={newCustomers?.ok ? newCustomers.data : null}
+    />
+  );
 }
 
 async function ScheduleBlock({ start, end, timeZone }: { start: string; end: string; timeZone: string }) {
@@ -59,7 +70,7 @@ export default async function TodayPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">{formatLongDate(now, tz)}</p>
       </header>
 
-      <Suspense fallback={<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[72px]" />)}</div>}>
+      <Suspense fallback={<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-[72px]" />)}</div>}>
         <AttentionBlock start={start} end={end} />
       </Suspense>
 

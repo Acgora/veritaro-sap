@@ -10,7 +10,9 @@ Node ≥ 20.18, npm. Optional: Supabase CLI + Docker for a full local stack; Pos
 | `NEXT_PUBLIC_SUPABASE_URL` | browser + server | `https://zqibpgbbchypqqyopxoh.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | browser + server | `sb_publishable_…` from Supabase → Settings → API. Safe to expose; RLS protects data |
 | `NEXT_PUBLIC_SITE_URL` | server | used for auth email redirects |
-| `SUPABASE_SECRET_KEY` | **not used** | never add to client code; never prefix `NEXT_PUBLIC_` |
+| `SUPABASE_SECRET_KEY` | **server only** (Vercel Sensitive) | AI metering RPCs + route reads only. Never `NEXT_PUBLIC_` |
+| `AI_PROVIDER_ANTHROPIC_KEY` | **server only** (Vercel Sensitive) | Anthropic API key. Without it (or the secret key) the assistant shows "not configured"; the rest of the app works |
+| `AI_PROVIDER_ANTHROPIC_BASE_URL` | server, optional | tests point this at the mock provider |
 
 `.env.local` is git-ignored; `.env.example` is committed.
 
@@ -57,3 +59,7 @@ The seed refuses to run without the flag and refuses to run if the database cont
 
 ## Deploying the app
 Supabase hosts the database, not the Next.js app. Recommended: push the repo to GitHub, import into Vercel, set the three `NEXT_PUBLIC_*` env vars, then add the Vercel URL to Supabase Redirect URLs.
+
+## End-to-end tests (Phase 002)
+
+`tests/e2e/phase2.mjs`, `smoke.mjs`, `roles.mjs` run against a local stack (Postgres + GoTrue + PostgREST + a small gateway) and a mock Anthropic server (`AI_PROVIDER_ANTHROPIC_BASE_URL`, key `mock-key`). They never call a real model.

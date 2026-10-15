@@ -50,13 +50,13 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
             <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-5 md:px-6 md:pb-6">
               {children}
             </main>
-            <AICommandBar />
+            <AICommandBar enabled={data.permissions.includes("ai.use")} />
           </div>
         </div>
       </div>
       <MobileNavigation permissions={data.permissions} />
       <CommandPalette permissions={data.permissions} />
-      <AskDialog />
+      <AskDialog enabled={data.permissions.includes("ai.use")} />
     </ShellProvider>
   );
 }

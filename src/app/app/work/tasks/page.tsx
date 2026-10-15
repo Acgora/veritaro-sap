@@ -3,6 +3,7 @@ import { requireAppContext } from "@/lib/context";
 import { getServiceContext } from "@/lib/service-context";
 import { listTasks } from "@/domain/tasks/service";
 import { listMembers } from "@/domain/members/service";
+import { listCustomerOptions } from "@/domain/customers/service";
 import { listTasksSchema } from "@/domain/tasks/schema";
 import { PageHeader } from "@/components/common/page-header";
 import { ErrorState } from "@/components/common/empty-state";
@@ -22,9 +23,10 @@ export default async function TasksPage({ searchParams }: { searchParams: SP }) 
   const app = await requireAppContext();
   const ctx = await getServiceContext();
 
-  const [tasks, members] = await Promise.all([
+  const [tasks, members, customers] = await Promise.all([
     listTasks(ctx, filters),
     ctx.permissions.can("tasks.assign") && ctx.permissions.can("members.read") ? listMembers(ctx) : Promise.resolve(null),
+    ctx.permissions.canAny("customers.read", "customers.read_linked") ? listCustomerOptions(ctx) : Promise.resolve(null),
   ]);
 
   const self = { userId: app.userId, displayName: `${app.profile.display_name || app.profile.first_name || "Me"} (me)` };
@@ -50,6 +52,8 @@ export default async function TasksPage({ searchParams }: { searchParams: SP }) 
           timeZone={app.organisation.timezone}
           permissions={app.permissions.toArray()}
           openCreate={sp.new === "1"}
+          customers={customers?.ok ? customers.data : []}
+          presetCustomerId={typeof sp.customer === "string" ? sp.customer : undefined}
         />
       )}
     </div>

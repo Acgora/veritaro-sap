@@ -39,6 +39,8 @@ export function TasksView(props: {
   timeZone: string;
   permissions: string[];
   openCreate: boolean;
+  customers?: { id: string; display_name: string }[];
+  presetCustomerId?: string;
 }) {
   const { tasks, total, page, pageSize, filters, assignees, currentUserId, timeZone } = props;
   const perms = new PermissionSet(props.permissions);
@@ -142,6 +144,11 @@ export function TasksView(props: {
                       </span>
                     ) : null}
                     <span>{assigneeName ? `Assigned to ${assigneeName}` : "Unassigned"}</span>
+                    {t.related_entity_type === "customer" && t.related_entity_id ? (
+                      <Link href={`/app/sales/customers/${t.related_entity_id}`} className="text-primary hover:underline">
+                        {props.customers?.find((c) => c.id === t.related_entity_id)?.display_name ?? "Customer"}
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -190,7 +197,7 @@ export function TasksView(props: {
 
       <Dialog open={creating} onOpenChange={(o) => (o ? setCreating(true) : closeCreate())}>
         <DialogContent title="New task">
-          <TaskForm assignees={assignees} canAssign={perms.can("tasks.assign")} currentUserId={currentUserId} onDone={closeCreate} />
+          <TaskForm assignees={assignees} canAssign={perms.can("tasks.assign")} currentUserId={currentUserId} customers={props.customers} presetCustomerId={props.presetCustomerId} onDone={closeCreate} />
         </DialogContent>
       </Dialog>
       <ConfirmationDialog
@@ -209,7 +216,7 @@ export function TasksView(props: {
       />
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent title="Edit task">
-          {editing ? <TaskForm task={editing} assignees={assignees} canAssign={perms.can("tasks.assign")} currentUserId={currentUserId} onDone={() => setEditing(null)} /> : null}
+          {editing ? <TaskForm task={editing} assignees={assignees} canAssign={perms.can("tasks.assign")} currentUserId={currentUserId} customers={props.customers} onDone={() => setEditing(null)} /> : null}
         </DialogContent>
       </Dialog>
     </div>

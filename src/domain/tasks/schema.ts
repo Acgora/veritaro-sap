@@ -44,6 +44,8 @@ export const createTaskSchema = z.object({
   priority: z.enum(TASK_PRIORITIES).default("normal"),
   dueAt: optionalDateTime,
   assignedTo: optionalUuid,
+  /** Optional link to a customer (validated in the DB to be in the same organisation). */
+  customerId: optionalUuid,
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({

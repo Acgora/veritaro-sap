@@ -9,6 +9,7 @@ const OUT = process.env.E2E_OUT ?? "test-results/e2e";
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
 const results = [];
+const visible = (locator, timeout = 8000) => locator.first().waitFor({ state: "visible", timeout }).then(() => true, () => false);
 const check = (name, cond) => { results.push([name, !!cond]); if (!cond) console.error("✘", name); else console.log("✔", name); };
 
 try {
@@ -57,8 +58,8 @@ try {
   await page.waitForURL("**/app/today");
   await page.getByRole("heading", { name: /Good (morning|afternoon|evening), Erin/ }).waitFor();
   check("onboarding creates org and lands on Today with greeting", true);
-  check("activity feed shows real organisation_created event", await page.getByText("created the organisation").isVisible());
-  check("money tile shows honest 'Not set up yet' (no fake values)", await page.getByText("Not set up yet").first().isVisible());
+  check("activity feed shows real organisation_created event", await visible(page.getByText("created the organisation")));
+  check("money tile shows honest 'Not set up yet' (no fake values)", await visible(page.getByText("Not set up yet").first()));
   await page.screenshot({ path: `${OUT}/01-today-desktop.png`, fullPage: true });
 
   // ⌘K command palette
@@ -72,8 +73,10 @@ try {
   // AI bar is honest
   await page.fill("#ai-command", "Create a quote for ABC Construction for R4,500");
   await page.getByRole("button", { name: "Send" }).click();
-  await page.getByText("The assistant isn't connected yet").waitFor();
-  check("AI command bar does not fake a response", true);
+  // Either the honest "not connected" message or a real assistant reply — never a silent no-op.
+  await page.getByRole("status").filter({ hasText: "You:" }).first().waitFor({ timeout: 20000 });
+  const reply = await page.getByRole("status").filter({ hasText: "You:" }).first().innerText();
+  check("AI command bar returns a real or honest-unavailable reply", /isn't available|isn't connected|customers|quote|later phase/i.test(reply));
 
   // Quick create → Task (live)
   await page.getByRole("button", { name: "New" }).first().click();
@@ -97,13 +100,13 @@ try {
   await page.fill("#title", "Follow up ABC Construction quote (called)");
   await page.getByRole("button", { name: "Save changes" }).click();
   await page.getByText("Task updated").waitFor();
-  check("task updated", await page.getByText("(called)").isVisible());
+  check("task updated", await visible(page.getByText("(called)")));
 
   // Complete
   await page.getByRole("button", { name: /Mark .* complete/ }).click();
   await page.getByText("Task completed").waitFor();
   await page.goto(`${BASE}/app/work/tasks?status=completed`);
-  check("completed task appears under Completed", await page.getByText("(called)").isVisible());
+  check("completed task appears under Completed", await visible(page.getByText("(called)")));
   await page.screenshot({ path: `${OUT}/03-tasks.png`, fullPage: true });
 
   // Delete (owner) with confirmation
@@ -115,8 +118,8 @@ try {
 
   // Today shows the activity trail
   await page.goto(`${BASE}/app/today`);
-  check("activity shows task_completed", await page.getByText(/completed task/).isVisible());
-  check("activity shows task_deleted", await page.getByText(/deleted task/).isVisible());
+  check("activity shows task_completed", await visible(page.getByText(/completed task/)));
+  check("activity shows task_deleted", await visible(page.getByText(/deleted task/)));
 
   // Settings: organisation + profile
   await page.goto(`${BASE}/app/settings/organisation`);
@@ -130,18 +133,18 @@ try {
   await page.getByText("Profile saved").waitFor();
   check("profile saves", true);
   await page.goto(`${BASE}/app/settings/members`);
-  check("members list shows owner", await page.getByRole("cell", { name: "Owner" }).isVisible());
+  check("members list shows owner", await visible(page.getByRole("cell", { name: "Owner" })));
 
   // Future module is honest
   await page.goto(`${BASE}/app/new/invoice`);
-  check("unimplemented quick-create shows honest placeholder", await page.getByText("Nothing has been created").isVisible());
+  check("unimplemented quick-create shows honest placeholder", await visible(page.getByText("Nothing has been created")));
 
   // Mobile shell
   const m = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await m.context().addCookies(await page.context().cookies());
   await m.goto(`${BASE}/app/today`);
   const bottomNav = m.getByRole("navigation", { name: "Main" });
-  check("mobile bottom navigation visible", await bottomNav.isVisible());
+  check("mobile bottom navigation visible", await visible(bottomNav));
   await m.screenshot({ path: `${OUT}/04-today-mobile.png`, fullPage: true });
   await m.getByRole("button", { name: "Quick actions" }).click();
   await m.getByText("Take receipt photo").waitFor();

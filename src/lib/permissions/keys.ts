@@ -1,5 +1,5 @@
 /**
- * Permission catalogue — MUST mirror public.permissions (migration 20261014000300).
+ * Permission catalogue — MUST mirror public.permissions (migrations 20261014000300, 20261015000100).
  * tests/unit/permissions.test.ts parses the migration and fails if these drift.
  * The database is the source of truth; this file exists for type-safety in the UI.
  */
@@ -27,6 +27,14 @@ export const PERMISSIONS = [
   "documents.access",
   "business.access",
   "inbox.access",
+  // Phase 002
+  "customers.read",
+  "customers.read_linked",
+  "customers.create",
+  "customers.update",
+  "customers.archive",
+  "ai.use",
+  "ai.usage_read",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

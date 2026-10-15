@@ -4,7 +4,7 @@ import { ACTION_CLASSES, ACTION_CLASS_POLICY, type AIToolDefinition } from "@/li
 import { AI_TOOLS, PLANNED_AI_TOOLS } from "@/lib/ai/registry";
 import { PermissionSet } from "@/lib/permissions";
 import type { ServiceContext } from "@/domain/context";
-import { handleCommand, isAssistantConfigured } from "@/lib/ai/command-service";
+import { isAssistantConfigured } from "@/lib/ai/command-service";
 
 const sendSpy = vi.fn(async () => ({ ok: true as const, data: { sent: true } }));
 const fakeConsequential: AIToolDefinition = {
@@ -83,9 +83,9 @@ describe("AI action safety model", () => {
     expect((await executeTool(ctx([]), "send_whatsapp", {})).status).toBe("not_implemented");
   });
 
-  it("assistant does not fabricate answers when no model is connected", async () => {
-    expect(isAssistantConfigured()).toBe(false);
-    const r = await handleCommand("How much does ABC owe?");
-    expect(r.status).toBe("unavailable");
+  it("assistant reports unconfigured when server keys are missing", () => {
+    expect(isAssistantConfigured({})).toBe(false);
+    expect(isAssistantConfigured({ SUPABASE_SECRET_KEY: "x" })).toBe(false);
+    expect(isAssistantConfigured({ SUPABASE_SECRET_KEY: "x", AI_PROVIDER_ANTHROPIC_KEY: "y" })).toBe(true);
   });
 });

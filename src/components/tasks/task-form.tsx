@@ -27,12 +27,16 @@ export function TaskForm({
   assignees,
   canAssign,
   currentUserId,
+  customers = [],
+  presetCustomerId,
   onDone,
 }: {
   task?: TaskWithAssignee;
   assignees: Assignee[];
   canAssign: boolean;
   currentUserId: string;
+  customers?: { id: string; display_name: string }[];
+  presetCustomerId?: string;
   onDone: () => void;
 }) {
   const [pending, start] = useTransition();
@@ -47,6 +51,7 @@ export function TaskForm({
       priority: String(fd.get("priority") ?? "normal") as TaskPriority,
       dueAt: dueLocal ? new Date(dueLocal).toISOString() : "",
       assignedTo: String(fd.get("assignedTo") ?? ""),
+      ...(customers.length > 0 ? { customerId: String(fd.get("customerId") ?? "") } : {}),
     };
     start(async () => {
       const r: ActionResult<{ id: string }> = task ? await updateTaskAction(task.id, input) : await createTaskAction(input);
@@ -90,6 +95,16 @@ export function TaskForm({
           </Select>
         )}
       </FormField>
+      {customers.length > 0 ? (
+        <FormField id="customerId" label="Customer" error={errors.customerId?.[0]}>
+          {(p) => (
+            <Select {...p} name="customerId" defaultValue={task?.related_entity_type === "customer" ? (task.related_entity_id ?? "") : (presetCustomerId ?? "")}>
+              <option value="">Not linked</option>
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+            </Select>
+          )}
+        </FormField>
+      ) : null}
       {formError ? <p role="alert" className="text-sm text-danger">{formError}</p> : null}
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onDone} disabled={pending}>Cancel</Button>
