@@ -10,6 +10,8 @@ export interface NavChild {
   href: string;
   /** false = future module placeholder */
   live: boolean;
+  /** Hidden unless the user holds this permission. */
+  permission?: Permission;
 }
 
 export interface NavItem {
@@ -28,9 +30,9 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: "sales", label: "Sales", href: "/app/sales", icon: ShoppingBag, permission: "sales.access",
     children: [
-      { label: "Leads", href: "/app/sales/leads", live: true },
-      { label: "Quotes", href: "/app/sales/quotes", live: true },
-      { label: "Customers", href: "/app/sales/customers", live: true },
+      { label: "Leads", href: "/app/sales/leads", live: true, permission: "leads.read" },
+      { label: "Quotes", href: "/app/sales/quotes", live: true, permission: "quotes.read" },
+      { label: "Customers", href: "/app/sales/customers", live: true, permission: "customers.read" },
     ],
   },
   {
@@ -45,8 +47,8 @@ export const NAV_ITEMS: NavItem[] = [
     key: "money", label: "Money", href: "/app/money", icon: Wallet, permission: "money.access",
     children: [
       { label: "Overview", href: "/app/money", live: true },
-      { label: "Invoices", href: "/app/money/invoices", live: true },
-      { label: "Payments", href: "/app/money/payments", live: true },
+      { label: "Invoices", href: "/app/money/invoices", live: true, permission: "invoices.read" },
+      { label: "Payments", href: "/app/money/payments", live: true, permission: "payments.read" },
       { label: "Expenses", href: "/app/money/expenses", live: false },
       { label: "Banking", href: "/app/money/banking", live: false },
       { label: "Reports", href: "/app/money/reports", live: false },
@@ -60,7 +62,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: "settings", label: "Settings", href: "/app/settings", icon: Settings,
     children: [
       { label: "Organisation", href: "/app/settings/organisation", live: true },
-      { label: "Quotes & invoices", href: "/app/settings/financial", live: true },
+      { label: "Quotes & invoices", href: "/app/settings/financial", live: true, permission: "settings.read" },
       { label: "Members", href: "/app/settings/members", live: true },
       { label: "My profile", href: "/app/settings/profile", live: true },
       { label: "Preferences", href: "/app/settings/preferences", live: true },

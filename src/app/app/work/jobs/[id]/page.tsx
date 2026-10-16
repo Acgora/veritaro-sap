@@ -7,7 +7,8 @@ import { getFieldJob, getJob, getPhotoUrls, listAssignableMembers } from "@/doma
 import { listActivityForEntity } from "@/domain/activity/service";
 import { ErrorState } from "@/components/common/empty-state";
 import { JobsGate } from "@/components/jobs/jobs-gate";
-import { JOB_TABS, JobDetailView, type JobTab } from "@/components/jobs/job-detail";
+import { JobDetailView } from "@/components/jobs/job-detail";
+import { JOB_TABS, type JobTab } from "@/components/jobs/job-tabs";
 import { FieldJobView } from "@/components/jobs/field-job-view";
 
 export const metadata: Metadata = { title: "Job" };

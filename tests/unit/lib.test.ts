@@ -55,6 +55,12 @@ describe("money", () => {
   it("formats decimal strings without float input", () => {
     expect(formatMoney("4500", "ZAR")).toMatch(/4[\s  ]?500,00|4[\s,]?500\.00/);
     expect(() => formatMoney("abc", "ZAR")).toThrow();
+    // Deterministic en-ZA output (independent of the runtime's ICU data, so SSR and the browser agree).
+    expect(formatMoney("2185", "ZAR")).toBe("R\u00a02\u00a0185,00");
+    expect(formatMoney("1234567.505", "ZAR")).toBe("R\u00a01\u00a0234\u00a0567,51");
+    expect(formatMoney("-650.5", "ZAR")).toBe("-R\u00a0650,50");
+    expect(formatMoney("0", "ZAR")).toBe("R\u00a00,00");
+    expect(formatMoney("12.3", "USD")).toBe("US$12,30");
   });
 });
 

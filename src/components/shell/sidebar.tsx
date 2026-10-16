@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 
 export function visibleNav(permissions: string[]): NavItem[] {
   const set = new PermissionSet(permissions);
-  return NAV_ITEMS.filter((i) => !i.permission || set.can(i.permission));
+  return NAV_ITEMS.filter((i) => !i.permission || set.can(i.permission)).map((i) =>
+    i.children ? { ...i, children: i.children.filter((c) => !c.permission || set.can(c.permission)) } : i,
+  );
 }
 
 export function Sidebar({ permissions }: { permissions: string[] }) {

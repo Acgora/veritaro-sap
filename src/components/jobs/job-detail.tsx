@@ -27,8 +27,7 @@ import { JobNotes } from "./job-notes";
 import { JobPhotos } from "./job-photos";
 import { EditJobForm } from "./edit-job-form";
 
-export const JOB_TABS = ["overview", "schedule", "team", "notes", "photos", "expenses", "documents", "activity"] as const;
-export type JobTab = (typeof JOB_TABS)[number];
+import type { JobTab } from "./job-tabs";
 
 export interface JobDetailCan {
   write: boolean;

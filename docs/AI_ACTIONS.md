@@ -35,3 +35,7 @@ CONSEQUENTIAL calls are stored in `ai_actions` as `needs_confirmation`; the user
 ## AI gateway, providers, metering
 
 See **`docs/AI_ARCHITECTURE.md`** (locked decision 2026-10-15: OpenAI GPT-6 Luna active; Anthropic + self-hosted disabled; no fallback; no automatic routing) and `docs/AI_EVALUATION.md`.
+
+## Phase 003
+
+See [PHASE_003.md](./PHASE_003.md) for the lifecycle, tables, state machines, numbering, snapshots, tax rules, permissions, storage, PDFs, follow-up rules and AI tools added in Phase 003.

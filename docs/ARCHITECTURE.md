@@ -92,3 +92,7 @@ Tokens live in `src/app/globals.css` (`--background`, `--foreground`, `--primary
 ## Accessibility
 
 Semantic landmarks, skip link, labelled form fields (`FormField` wires `aria-invalid`/`aria-describedby`), Radix dialogs/menus for focus management, `aria-current` on navigation, text labels on all status badges (colour never the only signal), visible focus rings.
+
+## Phase 003
+
+See [PHASE_003.md](./PHASE_003.md) for the lifecycle, tables, state machines, numbering, snapshots, tax rules, permissions, storage, PDFs, follow-up rules and AI tools added in Phase 003.

@@ -1,5 +1,5 @@
 import type { ServiceContext } from "@/domain/context";
-import { ACTION_CLASS_POLICY, type ConfirmationGrant, type ToolExecutionOutcome } from "./types";
+import { ACTION_CLASS_POLICY, type ConfirmationGrant, type FocusRef, type ToolExecutionOutcome } from "./types";
 import { findPlannedTool, findTool } from "./registry";
 
 /** Deterministic fingerprint of validated input (key-order independent). */
@@ -44,6 +44,9 @@ export async function executeTool(
   const anyOk = !tool.requiredAnyOf || tool.requiredAnyOf.some((p) => ctx.permissions.can(p));
   if (missing.length > 0 || !anyOk) return { status: "denied", reason: "You don't have permission to do that." };
 
+  const unavailable = tool.unavailable?.(ctx);
+  if (unavailable) return { status: "not_implemented", reason: unavailable };
+
   if (ACTION_CLASS_POLICY[tool.actionClass].requiresConfirmation) {
     const fp = fingerprint(tool.name, parsed.data);
     const valid =
@@ -61,5 +64,11 @@ export async function executeTool(
   const result = await tool.execute(aiCtx, parsed.data);
   if (!result.ok) return { status: "error", reason: result.error };
   const card = tool.card ? tool.card(parsed.data, result.data) : null;
-  return { status: "executed", actionClass: tool.actionClass, result: result.data, card };
+  let focus: FocusRef[] = [];
+  try {
+    focus = tool.focus ? tool.focus(parsed.data, result.data).filter((f) => f && f.id) : [];
+  } catch {
+    focus = [];
+  }
+  return { status: "executed", actionClass: tool.actionClass, result: result.data, card, focus };
 }

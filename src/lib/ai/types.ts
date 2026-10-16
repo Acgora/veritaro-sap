@@ -44,6 +44,25 @@ export interface AIToolDefinition<TSchema extends z.ZodType = z.ZodType, TOutput
   describe?: (ctx: ServiceContext, input: z.output<TSchema>) => Promise<string>;
   /** Optional UI card for a successful result (link + undo). */
   card?: (input: z.output<TSchema>, output: TOutput) => AICard | null;
+  /**
+   * Records this result touched — kept as conversation context so follow-ups like
+   * "add a line to that quote" or "invoice them" resolve without repeating names.
+   */
+  focus?: (input: z.output<TSchema>, output: TOutput) => FocusRef[];
+  /**
+   * When this returns a reason, the tool cannot run in this deployment (e.g. no messaging channel).
+   * Checked BEFORE asking for confirmation, so users are never asked to approve something that cannot happen.
+   */
+  unavailable?: (ctx: ServiceContext) => string | null;
+}
+
+export type FocusEntity = "customer" | "lead" | "quote" | "job" | "invoice";
+
+export interface FocusRef {
+  type: FocusEntity;
+  id: string;
+  /** Short human label (number or name). DB data — always framed as data in prompts. */
+  label: string;
 }
 
 export interface AICard {
@@ -68,7 +87,7 @@ export interface ConfirmationGrant {
 }
 
 export type ToolExecutionOutcome<T = unknown> =
-  | { status: "executed"; actionClass: ActionClass; result: T; card?: AICard | null }
+  | { status: "executed"; actionClass: ActionClass; result: T; card?: AICard | null; focus?: FocusRef[] }
   | { status: "needs_confirmation"; actionClass: "consequential"; summary: string; inputFingerprint: string; input: Record<string, unknown> }
   | { status: "denied"; reason: string }
   | { status: "invalid_input"; reason: string }

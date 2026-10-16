@@ -291,10 +291,15 @@ async function loadNotesAndPhotos(ctx: ServiceContext, jobId: string) {
   };
 }
 
+/** Every jobs column except internal_notes (see migration 20261016000800). */
+const JOB_COLUMNS = "actual_end, actual_start, archived_at, cancel_reason, cancelled_at, completed_at, completed_by, completion_notes, contact_id, created_at, created_by, customer_id, description, id, job_number, lead_id, organisation_id, priority, quote_id, scheduled_end, scheduled_start, site_address_id, status, title, updated_at" as const;
+
 /** Office view of a job (jobs.read_all). Related records are included only where the viewer may read them. */
 export async function getJob(ctx: ServiceContext, id: string): Promise<ActionResult<JobDetail>> {
-  const [j, a, extra] = await Promise.all([
-    ctx.supabase.from("jobs").select("*").eq("organisation_id", ctx.organisationId).eq("id", id).maybeSingle(),
+  const [j, notesRpc, a, extra] = await Promise.all([
+    ctx.supabase.from("jobs").select(JOB_COLUMNS).eq("organisation_id", ctx.organisationId).eq("id", id).maybeSingle(),
+    // internal_notes is not column-readable through the API (field agents must never see it); office users read it via RPC.
+    ctx.supabase.rpc("get_job_internal_notes", { p_job_id: id }),
     ctx.supabase.from("job_assignments").select(ASSIGNMENT_SELECT).eq("organisation_id", ctx.organisationId).eq("job_id", id)
       .order("role").order("assigned_at"),
     loadNotesAndPhotos(ctx, id),
@@ -305,7 +310,8 @@ export async function getJob(ctx: ServiceContext, id: string): Promise<ActionRes
     return fail(toUserMessage(error, "We couldn't load this job."));
   }
   if (!j.data) return fail(NOT_FOUND);
-  const job = j.data;
+  const job = { ...j.data, internal_notes: notesRpc.error ? null : ((notesRpc.data as string | null) ?? null) };
+  if (notesRpc.error) logServerError("jobs.get.internal_notes", notesRpc.error);
 
   const canCustomers = ctx.permissions.can("customers.read");
   const [cust, contact, site, quote, invoice] = await Promise.all([

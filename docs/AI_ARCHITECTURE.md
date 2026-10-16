@@ -117,3 +117,7 @@ No change to tools, orchestrator, metering, UI or business logic.
 ## Credentials
 
 `AI_PROVIDER_OPENAI_KEY`, `SUPABASE_SECRET_KEY` — Vercel Sensitive env vars, server-only (`import "server-only"`), never `NEXT_PUBLIC_`, never in DB, logs, prompts or GitHub. Provider error bodies are never shown or logged (they can echo input).
+
+## Phase 003
+
+See [PHASE_003.md](./PHASE_003.md) for the lifecycle, tables, state machines, numbering, snapshots, tax rules, permissions, storage, PDFs, follow-up rules and AI tools added in Phase 003.

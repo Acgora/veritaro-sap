@@ -68,3 +68,7 @@ Phase 001: all five are applied to the hosted project and verified identical (fu
 Both applied to the hosted project 2026-10-15 and fingerprint-verified identical to local.
 
 | `20261016000100_ai_openai_primary.sql` | AI decision 2026-10-15: primary route → `openai/gpt-6-luna` (effort `low`, 2048 output, 30 s); `ai_model_routes.reasoning_effort`; dated GPT-6 Luna price row with cached-input rates; `ai_usage_events.cached_input_tokens` / `reasoning_tokens`; `ai_cost_usd` + `ai_record_usage` replaced (single signatures, service_role only). Additive — history untouched |
+
+## Phase 003
+
+See [PHASE_003.md](./PHASE_003.md) for the lifecycle, tables, state machines, numbering, snapshots, tax rules, permissions, storage, PDFs, follow-up rules and AI tools added in Phase 003.

@@ -19,8 +19,89 @@ function reply(output, body) {
   };
 }
 
+// ---- Phase 003 scripted lifecycle ------------------------------------------------------
+// The mock reads "Records referenced" footers from history exactly like the real model is told to,
+// so context ("that quote", "the job") is exercised end to end. It does NOT test model judgement.
+const allText = (items) => items.flatMap((i) => (i.content ?? []).map((c) => c.text ?? "")).join("\n");
+function lastRef(items, type) {
+  const re = new RegExp(`${type} "[^"]*" id=([0-9a-f-]{36})`, "g");
+  let m, id = null;
+  const text = allText(items);
+  while ((m = re.exec(text))) id = m[1];
+  return id;
+}
+const amountOf = (t) => (t.match(/R\s?([\d,]+(?:\.\d{1,2})?)/)?.[1] ?? "").replace(/,/g, "");
+
+function decidePhase3(body, items, lastUserText, last) {
+  const t = lastUserText;
+  if (last?.type === "function_call_output") {
+    const fc = items.find((i) => i.type === "function_call" && i.call_id === last.call_id);
+    const tool = fc?.name;
+    let data = {};
+    try { data = JSON.parse(last.output); } catch {}
+    if (String(last.output).startsWith("ERROR:")) return reply([msg(`That didn't work: ${last.output.slice(7)}`)], body);
+    switch (tool) {
+      case "create_lead": return reply([msg(`Added lead ${data.title}.`)], body);
+      case "list_leads_needing_followup": return reply([msg(`${data.leads.length} lead(s) need a follow-up: ${data.leads.map((l) => l.name).join(", ") || "none"}.`)], body);
+      case "search_customers": {
+        const cs = data.customers ?? [];
+        if (cs.length === 0) return reply([msg("I couldn't find that customer.")], body);
+        if (cs.length > 1) return reply([msg(`Which one do you mean? ${cs.map((c) => `${c.name}${c.phone ? ` (${c.phone})` : ""}`).join(" or ")}`)], body);
+        const c = cs[0];
+        if (/quote for/i.test(t)) {
+          const price = amountOf(t);
+          return reply([call("create_quote_draft", { customerId: c.id, title: "Pest control", lines: [{ description: "Pest control", unitPrice: price }], pricesIncludeVat: !/excl/i.test(t) && /incl/i.test(t) })], body);
+        }
+        if (/owe/i.test(t)) return reply([call("get_customer_balance", { customerId: c.id })], body);
+        return null;
+      }
+      case "create_quote_draft": case "add_quote_line": case "get_quote":
+        return reply([msg(`${data.quoteNumber} is a ${data.status} quote for ${data.customer}: subtotal ${data.subtotal}, VAT ${data.vat}, total ${data.totalFormatted}.`)], body);
+      case "create_job_from_quote": return reply([msg(data.created ? "Job created and scheduled." : "That quote already has a job.")], body);
+      case "list_team_members": {
+        const name = t.match(/assign (\w+)/i)?.[1] ?? "";
+        const ms = (data.members ?? []).filter((m) => m.name.toLowerCase().includes(name.toLowerCase()));
+        if (ms.length !== 1) return reply([msg(ms.length ? `Which ${name} do you mean?` : `I couldn't find ${name} in your team.`)], body);
+        return reply([call("assign_job", { jobId: lastRef(items, "job"), userIds: [ms[0].userId] })], body);
+      }
+      case "assign_job": return reply([msg("Assigned.")], body);
+      case "list_jobs_for_date": return reply([msg(`${data.jobs.length} job(s) on ${data.date}: ${data.jobs.map((j) => `${j.number} ${j.title} (${j.when})`).join(", ")}.`)], body);
+      case "create_invoice_from_job": return reply([msg(data.created ? "Draft invoice created — review it before issuing." : "That job already has an invoice.")], body);
+      case "get_customer_balance": return reply([msg(`They owe ${data.outstanding} (${data.openInvoices} open invoice(s)).`)], body);
+      default: return null;
+    }
+  }
+  let m;
+  if ((m = t.match(/add (\w+) from (.+?) as a lead\. (?:he|she|they) wants? (.+?) in (\w+)/i)))
+    return reply([call("create_lead", { personName: m[1], companyName: m[2], serviceSummary: m[3], siteAddressText: m[4], source: "phone" })], body);
+  if (/leads? i haven.?t followed up/i.test(t)) return reply([call("list_leads_needing_followup", {})], body);
+  if ((m = t.match(/quote for (.+?) for /i))) return reply([call("search_customers", { query: m[1] })], body);
+  if ((m = t.match(/add a (R[\d,.]+) (.+?) to that quote/i)))
+    return reply([call("add_quote_line", { quoteId: lastRef(items, "quote"), description: m[2].replace(/^./, (c) => c.toUpperCase()), unitPrice: amountOf(m[1]) })], body);
+  if (/show me the quote/i.test(t)) return reply([call("get_quote", { quoteId: lastRef(items, "quote") })], body);
+  if (/mark it sent/i.test(t)) return reply([call("mark_quote_sent", { quoteId: lastRef(items, "quote") })], body);
+  if (/mark it accepted/i.test(t)) return reply([call("accept_quote", { quoteId: lastRef(items, "quote"), method: "verbal" })], body);
+  if ((m = t.match(/create a job from it for (\d{4}-\d{2}-\d{2}) at (\d{2}:\d{2})/i)))
+    return reply([call("create_job_from_quote", { quoteId: lastRef(items, "quote"), date: m[1], startTime: m[2], endTime: "11:00" })], body);
+  if (/assign \w+ to the job/i.test(t)) return reply([call("list_team_members", {})], body);
+  if ((m = t.match(/what jobs do we have on (\d{4}-\d{2}-\d{2})/i))) return reply([call("list_jobs_for_date", { date: m[1] })], body);
+  if (/complete the job/i.test(t)) return reply([call("complete_job", { jobId: lastRef(items, "job") })], body);
+  if (/create the invoice/i.test(t)) return reply([call("create_invoice_from_job", { jobId: lastRef(items, "job") })], body);
+  if (/issue the invoice/i.test(t)) return reply([call("issue_invoice", { invoiceId: lastRef(items, "invoice") })], body);
+  if ((m = t.match(/how much does (.+?) owe/i))) return reply([call("search_customers", { query: m[1] })], body);
+  if (/record (R[\d,.]+) received against the invoice/i.test(t))
+    return reply([call("record_payment", { invoiceId: lastRef(items, "invoice"), amount: amountOf(t) })], body);
+  if (/send it to them/i.test(t)) return reply([call("send_message", { text: "Your invoice" })], body);
+  return null;
+}
+
 function decide(body) {
   const items = body.input ?? [];
+  {
+    const lastUser = [...items].reverse().find((i) => i.role === "user")?.content?.[0]?.text ?? "";
+    const p3 = decidePhase3(body, items, lastUser, items[items.length - 1]);
+    if (p3) return p3;
+  }
   const lastUserText = [...items].reverse().find((i) => i.role === "user")?.content?.[0]?.text ?? "";
   const last = items[items.length - 1];
   const screenId = /customerId ([0-9a-f-]{36})/.exec(body.instructions ?? "")?.[1];

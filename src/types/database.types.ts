@@ -2839,6 +2839,7 @@ export type Database = {
         }[]
       }
       get_field_job: { Args: { p_job_id: string }; Returns: Json }
+      get_job_internal_notes: { Args: { p_job_id: string }; Returns: string }
       get_my_permissions: {
         Args: { p_organisation_id: string }
         Returns: string[]

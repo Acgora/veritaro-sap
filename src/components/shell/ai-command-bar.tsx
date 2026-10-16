@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ExternalLink, Mic, Paperclip, SendHorizontal, Sparkles, Undo2 } from "lucide-react";
@@ -105,7 +105,16 @@ function Replies({ items, onConfirm, onCancel, onUndo, pending }: {
 function useAssistantHandlers(a: ReturnType<typeof useAssistant>) {
   const router = useRouter();
   const pathname = usePathname();
-  const [pending, start] = useTransition();
+  // Plain state, not useTransition: router.refresh() started inside an async transition is entangled with it,
+  // and when Next discards that refresh (e.g. superseded by a prefetch/revalidation) isPending never clears —
+  // the bar stayed on "Working…" with Send disabled. Busy now covers only the assistant request itself.
+  const [pending, setPending] = useState(false);
+  const start = (task: () => Promise<void>) => {
+    setPending(true);
+    task()
+      .catch(() => toast.error("The assistant isn't available right now. Everything else works normally."))
+      .finally(() => setPending(false));
+  };
   const ask = (text: string) =>
     start(async () => {
       try {

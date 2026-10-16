@@ -64,3 +64,7 @@ Then add a guard trigger forbidding `organisation_id` changes, an audit trigger 
 - AI server tables (`ai_requests`, `ai_usage_monthly`, routes, prices, plans, limits) have RLS on with **no policies** — reachable only by service_role. Advisor reports this as INFO; intentional.
 - `ai_conversations/messages/actions`: a user sees only their own rows in orgs where they are active.
 - All `app_private` functions: EXECUTE revoked from `anon`.
+
+## Phase 003
+
+See [PHASE_003.md](./PHASE_003.md) for the lifecycle, tables, state machines, numbering, snapshots, tax rules, permissions, storage, PDFs, follow-up rules and AI tools added in Phase 003.

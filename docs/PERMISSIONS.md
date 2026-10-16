@@ -60,3 +60,7 @@ The structure already supports it: add `member_permission_overrides(member_id, p
 - `customers.read_linked` (field agents): sees only customers linked to a task assigned to them, and sees the **full** record of those customers (contacts, sites). Narrowing columns is a later decision.
 - `customers.archive`: owner/admin. Any creator may also archive their own customer within 15 minutes (undo of an accidental create).
 - `ai.use` gates the assistant bar; each AI tool additionally requires the same permission a human would need. `ai.usage_read` gates Settings → AI usage.
+
+## Phase 003
+
+See [PHASE_003.md](./PHASE_003.md) for the lifecycle, tables, state machines, numbering, snapshots, tax rules, permissions, storage, PDFs, follow-up rules and AI tools added in Phase 003.

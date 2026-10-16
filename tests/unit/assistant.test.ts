@@ -27,8 +27,10 @@ describe("assistant context minimisation", () => {
     expect(archive.inputSchema).toMatchObject({ type: "object" });
   });
 
-  it("archive_customer is the only consequential tool and every write tool is draft", () => {
-    expect(AI_TOOLS.filter((t) => t.actionClass === "consequential").map((t) => t.name)).toEqual(["archive_customer"]);
+  it("financially or externally consequential tools need confirmation; drafts never finalise", () => {
+    expect(AI_TOOLS.filter((t) => t.actionClass === "consequential").map((t) => t.name).sort()).toEqual([
+      "accept_quote", "archive_customer", "complete_job", "decline_quote", "issue_invoice", "mark_quote_sent", "record_payment", "send_message", "void_invoice",
+    ]);
     for (const n of ["create_customer", "update_customer", "add_contact", "add_site_address", "create_task", "complete_task"]) {
       expect(AI_TOOLS.find((t) => t.name === n)?.actionClass).toBe("draft");
     }

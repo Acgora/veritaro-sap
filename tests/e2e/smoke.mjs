@@ -59,12 +59,14 @@ try {
   await page.getByRole("heading", { name: /Good (morning|afternoon|evening), Erin/ }).waitFor();
   check("onboarding creates org and lands on Today with greeting", true);
   check("activity feed shows real organisation_created event", await visible(page.getByText("created the organisation")));
-  check("money tile shows honest 'Not set up yet' (no fake values)", await visible(page.getByText("Not set up yet").first()));
+  // Phase 003 rebuilt Today: the "Not set up yet" money tile became a live KPI from today_summary (real zero, no fake values).
+  check("money KPI shows a real zero (no fake values)", await visible(page.getByRole("list", { name: "Key numbers" }).getByRole("link", { name: /Money outstanding\s*R\s0,00/ })));
   await page.screenshot({ path: `${OUT}/01-today-desktop.png`, fullPage: true });
 
   // ⌘K command palette
   await page.keyboard.press("Control+k");
-  await page.getByPlaceholder("Search pages and actions…").waitFor();
+  // Phase 003: the palette also searches records, so its placeholder changed.
+  await page.getByPlaceholder("Search customers, quotes, jobs, invoices or pages…").waitFor();
   check("Ctrl+K opens command palette", true);
   await page.keyboard.type("tasks");
   await page.screenshot({ path: `${OUT}/02-command-palette.png` });
@@ -147,7 +149,8 @@ try {
   check("mobile bottom navigation visible", await visible(bottomNav));
   await m.screenshot({ path: `${OUT}/04-today-mobile.png`, fullPage: true });
   await m.getByRole("button", { name: "Quick actions" }).click();
-  await m.getByText("Take receipt photo").waitFor();
+  // Phase 003 renamed the quick actions ("Take receipt photo" → "Receipt photo", still marked "soon").
+  await m.getByRole("button", { name: /Receipt photo\s*soon/ }).waitFor();
   check("mobile + opens quick action sheet", true);
   await m.screenshot({ path: `${OUT}/05-mobile-quick-actions.png` });
 

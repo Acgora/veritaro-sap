@@ -3,6 +3,20 @@ import { completeTaskTool, createTaskTool, listOpenTasksTool } from "./tools/tas
 import {
   addContactTool, addSiteAddressTool, archiveCustomerTool, createCustomerTool, getCustomerTool, searchCustomersTool, updateCustomerTool,
 } from "./tools/customers";
+import { convertLeadTool, createLeadTool, findLeadsTool, getLeadTool, listLeadsNeedingFollowUpTool, updateLeadStatusTool } from "./tools/leads";
+import {
+  acceptQuoteTool, addQuoteLineTool, createInvoiceFromQuoteTool, createQuoteDraftTool, declineQuoteTool, findQuotesTool, getQuoteTool,
+  listQuotesNeedingFollowUpTool, markQuoteSentTool,
+} from "./tools/quotes";
+import {
+  assignJobTool, completeJobTool, createInvoiceFromJobTool, createJobFromQuoteTool, findJobsTool, listJobsForDateTool, listTeamMembersTool,
+  scheduleJobTool, startJobTool,
+} from "./tools/jobs";
+import {
+  findInvoicesTool, getCustomerBalanceTool, getInvoiceTool, getTodaySummaryTool, issueInvoiceTool, listOverdueInvoicesTool, listUnpaidInvoicesTool,
+  recordPaymentTool, sendMessageTool, voidInvoiceTool,
+} from "./tools/invoices";
+import { draftReplyTool, getConversationTool, logCommunicationTool } from "./tools/inbox";
 
 /**
  * Registered (executable) AI tools. To add a tool:
@@ -23,21 +37,29 @@ export const AI_TOOLS: ReadonlyArray<AIToolDefinition<any, any>> = [
   listOpenTasksTool,
   createTaskTool,
   completeTaskTool,
+  // Phase 003 — leads
+  findLeadsTool, getLeadTool, listLeadsNeedingFollowUpTool, createLeadTool, updateLeadStatusTool, convertLeadTool,
+  // quotes
+  findQuotesTool, getQuoteTool, listQuotesNeedingFollowUpTool, createQuoteDraftTool, addQuoteLineTool,
+  markQuoteSentTool, acceptQuoteTool, declineQuoteTool, createInvoiceFromQuoteTool,
+  // jobs
+  findJobsTool, listJobsForDateTool, listTeamMembersTool, createJobFromQuoteTool, scheduleJobTool, assignJobTool, startJobTool,
+  completeJobTool, createInvoiceFromJobTool,
+  // invoices, payments, today
+  findInvoicesTool, getInvoiceTool, getCustomerBalanceTool, listUnpaidInvoicesTool, listOverdueInvoicesTool, getTodaySummaryTool,
+  issueInvoiceTool, voidInvoiceTool, recordPaymentTool,
+  // communications
+  logCommunicationTool, getConversationTool, draftReplyTool, sendMessageTool,
 ];
 
 /** Designed in the product spec; intentionally NOT executable yet. */
 export const PLANNED_AI_TOOLS: ReadonlyArray<PlannedTool> = [
-  { name: "create_quote", actionClass: "draft", phase: "future", description: "Draft a quote for a customer" },
-  { name: "create_invoice", actionClass: "draft", phase: "future", description: "Draft an invoice" },
   { name: "record_expense", actionClass: "draft", phase: "future", description: "Record an expense from a receipt" },
-  { name: "schedule_job", actionClass: "draft", phase: "future", description: "Schedule a job" },
-  { name: "search_messages", actionClass: "read", phase: "future", description: "Search conversations" },
-  { name: "send_whatsapp", actionClass: "consequential", phase: "future", description: "Send a WhatsApp message" },
-  { name: "send_email", actionClass: "consequential", phase: "future", description: "Send an email" },
-  { name: "send_invoice", actionClass: "consequential", phase: "future", description: "Send an invoice to a customer" },
+  { name: "send_whatsapp", actionClass: "consequential", phase: "future", description: "Send a WhatsApp message (needs a connected channel)" },
+  { name: "send_email", actionClass: "consequential", phase: "future", description: "Send an email (needs a connected channel)" },
+  { name: "send_invoice", actionClass: "consequential", phase: "future", description: "Send an invoice to a customer (needs a connected channel)" },
   { name: "generate_document", actionClass: "draft", phase: "future", description: "Generate a document from a template" },
   { name: "get_cashflow", actionClass: "read", phase: "future", description: "Summarise cash flow" },
-  { name: "get_outstanding_invoices", actionClass: "read", phase: "future", description: "List unpaid invoices" },
 ];
 
 export function findTool(name: string) {

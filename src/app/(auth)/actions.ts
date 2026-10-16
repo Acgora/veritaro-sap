@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { publicEnv } from "@/lib/env";
 import { safeNextPath } from "@/lib/routes";
+import { logServerError } from "@/lib/errors";
 
 export interface AuthFormState {
   error?: string;
@@ -54,6 +55,7 @@ export async function registerAction(_: AuthFormState, formData: FormData): Prom
     },
   });
   if (error) {
+    logServerError("auth.register", error);
     if (error.code === "weak_password") return { error: "Please choose a stronger password." };
     if (error.code === "over_email_send_rate_limit") return { error: "Too many attempts. Please wait a minute and try again." };
     return { error: "We couldn't create your account. Please try again." };

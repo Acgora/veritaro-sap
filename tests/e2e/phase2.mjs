@@ -29,7 +29,8 @@ try {
   await page.click("button[type=submit]");
   await page.waitForURL("**/app/today");
   check("owner onboarded", true);
-  check("Today shows live 'New customers this week' tile", await visible(page.getByText("New customers this week")));
+  // Phase 003 rebuilt Today: the Phase 002 "New customers this week" tile was replaced by the live KPI row.
+  check("Today shows the live KPI row", await visible(page.getByRole("list", { name: "Key numbers" }).getByText("New leads")));
 
   // Customers — empty state, create with contact + site
   await page.goto(`${BASE}/app/sales/customers`);
@@ -50,7 +51,7 @@ try {
   check("WhatsApp button uses international number", (await page.getByRole("link", { name: "WhatsApp" }).getAttribute("href")) === "https://wa.me/27825551234");
   await page.goto(`${abcUrl}?tab=contacts`);
   const contacts = page.getByRole("region", { name: "Contacts" });
-  check("primary contact created atomically", await contacts.getByText("Pieter").isVisible() && await contacts.getByText("Primary").isVisible());
+  check("primary contact created atomically", await visible(contacts.getByText("Pieter")) && await visible(contacts.getByText("Primary")));
   await page.goto(`${abcUrl}?tab=sites`);
   check("site address created", await visible(page.getByRole("region", { name: "Sites and addresses" }).getByText("12 Dorp Street, Stellenbosch")));
   await page.screenshot({ path: `${OUT}/p2-01-customer-detail.png`, fullPage: true });
@@ -162,7 +163,8 @@ try {
   await m.screenshot({ path: `${OUT}/p2-06-customers-mobile.png`, fullPage: true });
   check("mobile customer list renders", await visible(m.getByRole("link", { name: "ABC Construction", exact: true })));
   await m.getByRole("button", { name: "Quick actions" }).click();
-  check("mobile quick action 'Create customer' is live", await visible(m.getByRole("button", { name: /Create customer/ })) && !(await m.getByRole("button", { name: /Create customer soon/ }).count()));
+  // Phase 003 renamed the quick action "Create customer" → "Customer".
+  check("mobile quick action 'Customer' is live", await visible(m.getByRole("button", { name: "Customer", exact: true })) && !(await m.getByRole("button", { name: /^Customer\s*soon/ }).count()));
 
   if (errors.length) console.error("PAGE ERRORS:", errors);
   check("no uncaught page errors", errors.length === 0);
