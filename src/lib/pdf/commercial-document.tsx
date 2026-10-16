@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic @jsxImportSource react */
 // (pragma keeps the automatic JSX runtime under Vitest, whose tsconfig uses jsx: "preserve")
-import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View, type TextProps } from "@react-pdf/renderer";
 import { formatMoney } from "@/lib/money";
 import { formatDocDate } from "@/domain/commercial/dates";
 import type { CommercialDocumentData } from "./document-data";
@@ -63,7 +63,7 @@ function pdfSafe(text: string): string {
   return text.replace(/[   ]/g, " ").replace(/[−]/g, "-").replace(/[^\n\t -ÿ–—‘’“”•…€]/g, "?");
 }
 
-function Lines({ text, style }: { text: string | null | undefined; style?: object }) {
+function Lines({ text, style }: { text: string | null | undefined; style?: TextProps["style"] }) {
   if (!text) return null;
   return <Text style={style}>{pdfSafe(text)}</Text>;
 }

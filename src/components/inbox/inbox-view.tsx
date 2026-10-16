@@ -203,7 +203,7 @@ function StartConversation({ leadOptions, customerOptions, onDone, onCancel }: {
           </div>
         ) : null}
       </div>
-      <p className="text-xs text-muted-foreground">If there&apos;s already an open conversation for this lead or customer, it's added there.</p>
+      <p className="text-xs text-muted-foreground">If there&apos;s already an open conversation for this lead or customer, it&apos;s added there.</p>
       <LogCommunicationForm idPrefix="start" withSubject link={link} onCancel={onCancel} onDone={(r) => onDone(r.conversationId)} />
     </div>
   );
