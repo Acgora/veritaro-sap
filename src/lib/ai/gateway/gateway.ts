@@ -11,7 +11,7 @@ import { ProviderError, type AIProvider, type ChatMessage, type ModelTier, type 
 export type GatewayFailure =
   | { ok: false; code: "not_configured"; reason: string }
   | { ok: false; code: "blocked"; reason: string }
-  | { ok: false; code: "unavailable"; reason: string };
+  | { ok: false; code: "unavailable"; reason: string; providerError?: { kind: string; status?: number } };
 
 export type GatewayResult = { ok: true; response: ProviderResponse; provider: string; model: string } | GatewayFailure;
 
@@ -108,6 +108,7 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
   const started = d.now();
   let response: ProviderResponse | null = null;
   let outcome: "ok" | "error" | "timeout" | "provider_unavailable" = "ok";
+  let providerError: { kind: string; status?: number } | undefined;
   try {
     response = await d.providerFor(route).complete({
       model: route.model,
@@ -121,6 +122,7 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
     });
   } catch (e) {
     const kind = e instanceof ProviderError ? e.kind : "unavailable";
+    providerError = { kind, status: e instanceof ProviderError ? e.status : undefined };
     outcome = kind === "timeout" ? "timeout" : kind === "unavailable" || kind === "rate_limited" ? "provider_unavailable" : "error";
     logServerError("ai.provider", { code: kind, message: (e as Error).message });
   }
@@ -145,7 +147,7 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
   if (finError) logServerError("ai.finish", finError);
 
   // No silent fallback to another provider (approved D9). Fail gracefully instead.
-  if (!response) return { ok: false, code: "unavailable", reason: "The AI provider is unavailable right now." };
+  if (!response) return { ok: false, code: "unavailable", reason: "The AI provider is unavailable right now.", providerError };
   return { ok: true, response, provider: route.provider, model: route.model };
 }
 

@@ -50,9 +50,10 @@ export function blockedMessage(reason: string): string {
   }
 }
 
-function failureReply(f: GatewayFailure, conversationId?: string): AssistantReply {
+function failureReply(f: GatewayFailure, conversationId?: string, isAdmin = false): AssistantReply {
   if (f.code === "blocked") return { status: "blocked", message: blockedMessage(f.reason), cards: [], conversationId };
-  return { status: "unavailable", message: UNAVAILABLE_MESSAGE, cards: [], conversationId };
+  const hint = isAdmin ? " Admins: open Settings → AI usage → Configuration check to see why." : "";
+  return { status: "unavailable", message: UNAVAILABLE_MESSAGE + hint, cards: [], conversationId };
 }
 
 /** Only tools this user may run are offered to the model (smaller prompt, no temptation). */
@@ -135,7 +136,10 @@ export async function handleAssistantMessage(a: AssistantContext, text: string, 
   const message = text.trim().slice(0, 2000);
   if (!message) return { status: "error", message: "Type a question or instruction.", cards: [] };
   if (!ctx.permissions.can("ai.use")) return { status: "blocked", message: blockedMessage("not_permitted"), cards: [] };
-  if (!isGatewayConfigured()) return { status: "unavailable", message: UNAVAILABLE_MESSAGE, cards: [] };
+  if (!isGatewayConfigured()) {
+    const hint = ctx.permissions.can("settings.update") ? " Admins: open Settings → AI usage → Configuration check to see what's missing." : "";
+    return { status: "unavailable", message: UNAVAILABLE_MESSAGE + hint, cards: [] };
+  }
 
   const convId = await ensureConversation(ctx, conversationId, message);
   if (!convId) return { status: "error", message: "Couldn't start a conversation. Please try again.", cards: [] };
@@ -156,7 +160,7 @@ export async function handleAssistantMessage(a: AssistantContext, text: string, 
       organisationId: ctx.organisationId, userId: ctx.userId, category: "chat", toolName: lastTool, system, messages, tools,
     });
     if (!result.ok) {
-      const reply = failureReply(result, convId);
+      const reply = failureReply(result, convId, ctx.permissions.can("settings.update"));
       await saveMessage(ctx, convId, "assistant", reply.message);
       return { ...reply, cards };
     }

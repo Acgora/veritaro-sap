@@ -311,3 +311,16 @@ describe("Anthropic adapter (disabled, kept)", () => {
     expect(parseAnthropicResponse({})).toEqual({ content: [], stopReason: "other", usage: { inputTokens: 0, outputTokens: 0 } });
   });
 });
+
+describe("configuration self-check", () => {
+  it("reports missing keys without revealing values", async () => {
+    const { runAIDiagnostics } = await import("@/lib/ai/gateway/diagnostics");
+    const none = await runAIDiagnostics({});
+    expect(none.find((c) => c.id === "secret_present")?.ok).toBe(false);
+    expect(none.find((c) => c.id === "openai_key_present")?.ok).toBe(false);
+    const pub = await runAIDiagnostics({ SUPABASE_SECRET_KEY: "sb_publishable_abc123", AI_PROVIDER_OPENAI_KEY: "sk-test-123" });
+    expect(pub.find((c) => c.id === "secret_kind")?.ok).toBe(false);
+    expect(JSON.stringify(pub)).not.toContain("abc123");
+    expect(JSON.stringify(pub)).not.toContain("sk-test-123");
+  });
+});

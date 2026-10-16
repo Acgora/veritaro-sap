@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 import { requireAppContext } from "@/lib/context";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { isGatewayConfigured } from "@/lib/ai/gateway/gateway";
+import { runAIDiagnostics, runLiveTest, type AICheck } from "@/lib/ai/gateway/diagnostics";
 import { logServerError, toUserMessage } from "@/lib/errors";
 import { ErrorState, EmptyState } from "@/components/common/empty-state";
 import { StatusBadge } from "@/components/common/status-badge";
@@ -30,8 +33,22 @@ function usd(v: string) {
   return `US$${w}.${(f + "0000").slice(0, 4)}`;
 }
 
-export default async function AIUsagePage() {
+function Checks({ checks }: { checks: AICheck[] }) {
+  return (
+    <ul className="flex flex-col gap-2 text-sm">
+      {checks.map((c) => (
+        <li key={c.id} className="flex items-start gap-2">
+          {c.ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-label="OK" /> : <XCircle className="mt-0.5 size-4 shrink-0 text-danger" aria-label="Problem" />}
+          <span><span className="font-medium">{c.label}</span> <span className="text-muted-foreground">— {c.detail}</span></span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default async function AIUsagePage({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
   const app = await requireAppContext();
+  const { test } = await searchParams;
   if (!app.permissions.can("ai.usage_read")) {
     return <p className="text-sm text-muted-foreground">Only owners, admins and accountants can view AI usage.</p>;
   }
@@ -43,6 +60,10 @@ export default async function AIUsagePage() {
   }
   const s = data as unknown as Summary;
   const configured = isGatewayConfigured();
+  // Configuration self-check: owners/admins only (settings.update), booleans and reason codes only.
+  const canCheck = app.permissions.can("settings.update");
+  const checks = canCheck ? await runAIDiagnostics() : [];
+  const live = canCheck && test === "1" && configured ? await runLiveTest(app.organisation.id, app.userId) : null;
   const status = !configured
     ? { tone: "neutral" as const, label: "Not connected" }
     : !s.ai_enabled
@@ -73,6 +94,20 @@ export default async function AIUsagePage() {
         <div><dt className="text-xs text-muted-foreground">Per-person limit</dt><dd className="tabular-nums">{s.user_rate_limit} per {Math.round(s.user_rate_window_seconds / 60)} min</dd></div>
         <div><dt className="text-xs text-muted-foreground">Plan</dt><dd>{s.plan_key}</dd></div>
       </dl>
+      {canCheck ? (
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4" aria-labelledby="ai-check">
+          <div className="flex items-center justify-between gap-2">
+            <h3 id="ai-check" className="text-sm font-semibold">Configuration check</h3>
+            {configured ? (
+              <Link href="/app/settings/ai?test=1" className="text-sm font-medium text-primary underline-offset-4 hover:underline" prefetch={false}>
+                Run live test
+              </Link>
+            ) : null}
+          </div>
+          <Checks checks={live ? [...checks, live] : checks} />
+          <p className="text-xs text-muted-foreground">Keys are never shown. The live test makes one tiny, metered AI call.</p>
+        </section>
+      ) : null}
       <p className="text-xs text-muted-foreground">
         Costs are calculated from the provider&apos;s published token prices, in US dollars. Passing the soft budget alerts owners; reaching the hard
         ceiling pauses the assistant until next month. Limits are set by Veritaro and can be changed per plan.
