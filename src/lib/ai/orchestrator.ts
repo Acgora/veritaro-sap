@@ -85,6 +85,16 @@ export function systemPrompt(a: Pick<AssistantContext, "organisationName" | "tim
     .join("\n");
 }
 
+/**
+ * Add a result card unless an equivalent navigation card is already shown
+ * (same label and same page, ignoring tab/query). Cards with Undo are never merged.
+ */
+export function addCard(cards: AICard[], card: AICard): void {
+  const path = (h: string) => h.split("?")[0];
+  if (!card.undo && cards.some((c) => !c.undo && c.label === card.label && path(c.href) === path(card.href))) return;
+  cards.push(card);
+}
+
 function textOf(blocks: ContentBlock[]): string {
   return blocks.filter((b): b is Extract<ContentBlock, { type: "text" }> => b.type === "text").map((b) => b.text).join("\n").trim();
 }
@@ -182,7 +192,7 @@ export async function handleAssistantMessage(a: AssistantContext, text: string, 
         action_class: tool?.actionClass ?? "read",
       };
       if (out.status === "executed") {
-        if (out.card) cards.push(out.card);
+        if (out.card) addCard(cards, out.card);
         if (tool && tool.actionClass !== "read") {
           await ctx.supabase.from("ai_actions").insert({ ...base, input: use.input as never, status: "executed", summary: tool.summarise(use.input as never) });
         }

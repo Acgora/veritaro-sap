@@ -91,3 +91,16 @@ describe("context strategy", () => {
     expect(none).not.toContain("is viewing");
   });
 });
+
+describe("result cards", () => {
+  it("merges duplicate navigation cards for the same record but keeps Undo cards", async () => {
+    const { addCard } = await import("@/lib/ai/orchestrator");
+    const cards: import("@/lib/ai/types").AICard[] = [];
+    addCard(cards, { label: "Open customer", href: "/app/sales/customers/1?tab=contacts" });
+    addCard(cards, { label: "Open customer", href: "/app/sales/customers/1?tab=sites" });
+    addCard(cards, { label: "Open customer", href: "/app/sales/customers/2" });
+    addCard(cards, { label: "Task: x", href: "/app/work/tasks", undo: { kind: "task", id: "a" } });
+    addCard(cards, { label: "Task: x", href: "/app/work/tasks", undo: { kind: "task", id: "b" } });
+    expect(cards).toHaveLength(4);
+  });
+});

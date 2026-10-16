@@ -100,8 +100,9 @@ select tests.ok((select count(*) from public.customer_contacts) = 0, 'other org 
 select tests.ok(tests.affected($$update public.customers set display_name = 'x' where id = current_setting('t.abc')::uuid$$) = 0, 'other org cannot update customer');
 
 select tests.login('e1000000-0000-0000-0000-000000000003');  -- field agent
-select tests.ok((select count(*) from public.customers) = 1, 'field agent sees only customers linked to their open tasks');
-select tests.ok((select count(*) from public.customer_addresses) = 1, 'field agent sees site address of linked customer');
+-- Phase 003 (approved): field agents no longer read customer tables through linked tasks; job-scoped RPC only.
+select tests.ok((select count(*) from public.customers) = 0, 'field agent cannot read customer records directly (Phase 003 scope)');
+select tests.ok((select count(*) from public.customer_addresses) = 0, 'field agent cannot read customer sites directly (Phase 003 scope)');
 select tests.throws($$insert into public.customers (organisation_id, display_name) values (current_setting('t.org')::uuid, 'x')$$, 'field agent cannot create customers');
 select tests.ok(tests.affected($$update public.customers set phone = '1'$$) = 0, 'field agent cannot edit customers');
 
@@ -221,9 +222,9 @@ select tests.ok((public.ai_begin_request(current_setting('t.org')::uuid, 'e10000
                  'anthropic', 'claude-haiku-5-5', 'chat', 10, 10) ->> 'allowed') = 'true', 'rate limit is per user');
 
 -- Monthly request limit
-update public.ai_usage_monthly set request_count = 1000 where organisation_id = current_setting('t.org')::uuid;
+update public.ai_usage_monthly set request_count = 5000 where organisation_id = current_setting('t.org')::uuid;
 select tests.ok((public.ai_begin_request(current_setting('t.org')::uuid, 'e1000000-0000-0000-0000-000000000001',
-                 'anthropic', 'claude-haiku-5-5', 'chat', 10, 10) ->> 'reason') = 'request_limit', '1,000 requests/month limit enforced');
+                 'anthropic', 'claude-haiku-5-5', 'chat', 10, 10) ->> 'reason') = 'request_limit', 'monthly request limit (5,000 since Phase 003) enforced');
 
 select tests.ok(public.ai_release_stale_reservations('0 seconds') >= 1, 'stale reservations can be released');
 select tests.logout();

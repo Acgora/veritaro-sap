@@ -15,4 +15,5 @@ for t in "$DIR"/tests/*.test.sql; do
   OUT=$(psql -q -t -A -v ON_ERROR_STOP=1 -d "$DB" -f "$t" 2>&1) || { echo "$OUT" | grep -E "ERROR|FAILED" ; echo "✘ database tests FAILED in $(basename "$t")"; exit 1; }
   echo "  $(basename "$t"): $(echo "$OUT" | grep "assertions passed" | tail -1)"
 done
+TEST_DB="$DB" "$DIR/tests/concurrency.sh"
 echo "✔ database tests passed"
