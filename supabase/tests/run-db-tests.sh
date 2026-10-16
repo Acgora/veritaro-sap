@@ -16,4 +16,5 @@ for t in "$DIR"/tests/*.test.sql; do
   echo "  $(basename "$t"): $(echo "$OUT" | grep "assertions passed" | tail -1)"
 done
 TEST_DB="$DB" "$DIR/tests/concurrency.sh"
+(cd "$DIR/.." && npx esbuild src/lib/money-calc.ts --format=esm --outfile=.parity-build/money-calc.mjs --log-level=warning && node scripts/money-parity.mjs "$DB")
 echo "✔ database tests passed"

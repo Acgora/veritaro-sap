@@ -134,7 +134,7 @@ export async function runModel(call: ModelCall, deps?: Partial<GatewayDeps>): Pr
     p_tier: tier,
     // Analytics: the tool(s) the model chose in THIS response (falls back to the caller's hint).
     // Must be sent explicitly (null when no tool): PostgREST matches functions by argument names.
-    p_tool_name: toolsChosen(response) ?? call.toolName ?? null,
+    p_tool_name: (toolsChosen(response) ?? call.toolName ?? null) as string, // generated types omit SQL-nullable args
     p_input_tokens: response?.usage.inputTokens ?? 0,
     p_output_tokens: response?.usage.outputTokens ?? 0,
     p_cached_input_tokens: response?.usage.cachedInputTokens ?? 0,

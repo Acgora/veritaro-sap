@@ -5,12 +5,14 @@ import { PERMISSIONS, ROLES, PermissionSet, isRole } from "@/lib/permissions";
 
 const seed = readFileSync(path.resolve(__dirname, "../../supabase/migrations/20261014000300_roles_permissions_seed.sql"), "utf8");
 const phase2 = readFileSync(path.resolve(__dirname, "../../supabase/migrations/20261015000100_customers.sql"), "utf8");
+const phase3 = readFileSync(path.resolve(__dirname, "../../supabase/migrations/20261016000200_phase3_foundation.sql"), "utf8");
 
 describe("permission catalogue", () => {
   it("TS permission keys exactly match the DB seed", () => {
     const block = seed.slice(seed.indexOf("insert into public.permissions"), seed.indexOf("-- Owner: everything."));
     const block2 = phase2.slice(phase2.indexOf("insert into public.permissions"), phase2.indexOf("insert into public.role_permissions"));
-    const dbKeys = [...(block + block2).matchAll(/\('([a-z_]+\.[a-z_]+)',/g)].map((m) => m[1]).sort();
+    const block3 = phase3.slice(phase3.indexOf("insert into public.permissions"), phase3.indexOf("insert into public.role_permissions"));
+    const dbKeys = [...(block + block2 + block3).matchAll(/\('([a-z_]+\.[a-z_]+)',/g)].map((m) => m[1]).sort();
     expect(dbKeys).toEqual([...PERMISSIONS].sort());
   });
 
