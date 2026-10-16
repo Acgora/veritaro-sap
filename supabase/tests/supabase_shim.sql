@@ -21,7 +21,8 @@ grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;
 -- Emulate Supabase's platform-wide default privileges (functions/tables auto-granted to API roles).
-alter default privileges grant execute on functions to anon, authenticated, service_role;
+-- Hosted Supabase auto-grants EXECUTE only on functions in the API schema (public), not in app_private.
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 -- Supabase installs extensions into the "extensions" schema.
 create schema if not exists extensions;

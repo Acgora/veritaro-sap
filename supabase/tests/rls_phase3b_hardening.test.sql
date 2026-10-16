@@ -66,4 +66,12 @@ select tests.ok(not exists (
   select 1 from public.global_search(current_setting('t.org')::uuid, 'INV-', 20) s join public.invoices i on i.id = s.id
    where s.status <> public.invoice_effective_status(i.status, i.due_date, i.amount_due)), 'search invoice statuses are effective statuses');
 
+-- Grants: invoker paths may only reach the helpers they need; nothing else in app_private is executable by API roles.
+select tests.ok(has_function_privilege('authenticated', 'app_private.next_document_number(uuid,text)', 'execute')
+            and has_function_privilege('authenticated', 'app_private.copy_quote_items_to_invoice(uuid,uuid)', 'execute'),
+                'numbering and quote-to-invoice copy helpers are executable for invoker paths');
+select tests.ok(not has_function_privilege('authenticated', 'app_private.log_activity(uuid,text,text,uuid,jsonb)', 'execute')
+            and not has_function_privilege('authenticated', 'app_private.document_snapshot(uuid,uuid,uuid,uuid)', 'execute'),
+                'definer-only helpers (activity log, snapshots) stay unreachable');
+
 select format('%s assertions passed (cumulative)', count(*)) as summary from tests.results;
