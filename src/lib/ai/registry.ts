@@ -1,7 +1,7 @@
 import type { AIToolDefinition, PlannedTool } from "./types";
 import { completeTaskTool, createTaskTool, listOpenTasksTool } from "./tools/tasks";
 import {
-  addContactTool, addSiteAddressTool, archiveCustomerTool, createCustomerTool, getCustomerTool, searchCustomersTool, updateCustomerTool,
+  addContactTool, addSiteAddressTool, archiveCustomerTool, createCustomerTool, getCustomerTool, restoreCustomerTool, searchCustomersTool, updateCustomerTool,
 } from "./tools/customers";
 import { convertLeadTool, createLeadTool, findLeadsTool, getLeadTool, listLeadsNeedingFollowUpTool, updateLeadStatusTool } from "./tools/leads";
 import {
@@ -34,6 +34,7 @@ export const AI_TOOLS: ReadonlyArray<AIToolDefinition<any, any>> = [
   addContactTool,
   addSiteAddressTool,
   archiveCustomerTool,
+  restoreCustomerTool,
   listOpenTasksTool,
   createTaskTool,
   completeTaskTool,

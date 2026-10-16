@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  addAddress, addContact, archiveCustomer, createCustomer, findDuplicates, getCustomer, listCustomers, updateCustomer,
+  addAddress, addContact, archiveCustomer, createCustomer, findDuplicates, getCustomer, listCustomers, restoreCustomer, updateCustomer,
 } from "@/domain/customers/service";
 import { CUSTOMER_TYPES } from "@/domain/customers/schema";
 import { ok } from "@/lib/errors";
@@ -15,7 +15,7 @@ const READ_ANY: AIToolDefinition["requiredAnyOf"] = ["customers.read", "customer
 
 const searchInput = z.object({
   query: z.string().trim().min(1).max(100).describe("Name, email or phone fragment"),
-  includeArchived: z.boolean().optional(),
+  includeArchived: z.boolean().optional().describe("Also include archived customers (active ones are always included)"),
 });
 
 export const searchCustomersTool: AIToolDefinition<typeof searchInput> = {
@@ -26,11 +26,15 @@ export const searchCustomersTool: AIToolDefinition<typeof searchInput> = {
   requiredAnyOf: READ_ANY,
   inputSchema: searchInput,
   execute: async (ctx, input) => {
-    const r = await listCustomers(ctx, { q: input.query, status: input.includeArchived ? "archived" : "active", pageSize: 10 });
-    if (!r.ok) return r;
+    // includeArchived means active AND archived (it used to search archived ONLY, so a restored customer vanished).
+    const statuses = input.includeArchived ? (["active", "archived"] as const) : (["active"] as const);
+    const results = await Promise.all(statuses.map((status) => listCustomers(ctx, { q: input.query, status, pageSize: 10 })));
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) return failed;
+    const rows = results.flatMap((r) => (r.ok ? r.data.customers : []));
     return ok({
-      total: r.data.total,
-      customers: r.data.customers.map((c) => ({ id: c.id, name: c.display_name, type: c.type, phone: c.phone, email: c.email, status: c.status })),
+      total: results.reduce((n, r) => n + (r.ok ? r.data.total : 0), 0),
+      customers: rows.slice(0, 10).map((c) => ({ id: c.id, name: c.display_name, type: c.type, phone: c.phone, email: c.email, status: c.status })),
     });
   },
   summarise: (i) => `Search customers for “${i.query}”`,
@@ -176,3 +180,17 @@ export const archiveCustomerTool: AIToolDefinition<typeof archiveInput> = {
   card: (i) => ({ label: "Open customer", href: `/app/sales/customers/${i.customerId}` }),
 };
 
+
+const restoreInput = z.object({ customerId: z.uuid() });
+
+export const restoreCustomerTool: AIToolDefinition<typeof restoreInput> = {
+  name: "restore_customer",
+  description: "Restore an archived customer so it can be used again for quotes, jobs and invoices. Use the id from search_customers (includeArchived) or the screen.",
+  actionClass: "draft",
+  requiredPermissions: ["customers.archive"],
+  inputSchema: restoreInput,
+  execute: (ctx, i) => restoreCustomer(ctx, i.customerId),
+  summarise: () => "Restore this customer",
+  card: (i) => ({ label: "Open customer", href: `/app/sales/customers/${i.customerId}` }),
+  focus: (i) => [{ type: "customer", id: i.customerId, label: "restored customer" }],
+};

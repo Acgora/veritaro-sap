@@ -78,6 +78,8 @@ export function systemPrompt(a: Pick<AssistantContext, "organisationName" | "tim
     "- Pass amounts exactly as the user stated them (\"R1,250\" → \"1250\"). \"Excluding VAT\" means pricesIncludeVat=false.",
     "- Work out dates yourself from today's date (e.g. \"next Tuesday\") and pass local YYYY-MM-DD and HH:mm; the app converts time zones.",
     "- AMBIGUITY: if a search returns more than one plausible match (two customers called ABC, several unpaid invoices for a payment), do NOT guess. Ask \"Which one do you mean?\" and list the options with safe identifying details (number, status, amount, suburb). Only proceed once it is clear.",
+    "- If the screen context or a \"Records referenced\" note already gives the record's id, use that id directly (e.g. get_customer) instead of searching by name again. Never tell the user a record doesn't exist when you have its id — fetch it.",
+    "- An archived customer can be restored with restore_customer; offer that instead of saying it can't be done.",
     "- Follow-ups like \"that quote\", \"the job\", \"invoice them\" refer to the most recent matching record in \"Records referenced\" notes or the screen context. If none is clear, ask.",
     "- Before creating a customer or lead, search first. If create_customer returns possibleDuplicates, list them and ask; never retry with allowDuplicate unless the user confirms.",
     "- Lifecycle: lead → convert_lead_to_customer → create_quote_draft → mark_quote_sent → accept_quote → create_job_from_quote → schedule/assign → complete_job → create_invoice_from_job → issue_invoice → record_payment. A quote needs a customer.",
@@ -203,7 +205,8 @@ export async function handleAssistantMessage(a: AssistantContext, text: string, 
       if (out.status === "executed") {
         if (out.card) addCard(cards, out.card);
         if (out.focus?.length) focus.push(...out.focus);
-        if (tool && tool.actionClass !== "read") {
+        const nothingChanged = (out.result as { created?: boolean } | null)?.created === false;
+        if (tool && tool.actionClass !== "read" && !nothingChanged) {
           await ctx.supabase.from("ai_actions").insert({ ...base, input: use.input as never, status: "executed", summary: tool.summarise(use.input as never) });
         }
         results.push({ type: "tool_result", toolUseId: use.id, content: trimJson(out.result) });
