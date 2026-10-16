@@ -111,6 +111,9 @@ fails `security_invariants.test.sql`. Every function pins `search_path = ''` and
 - **Vercel build:** `prebuild` runs `vitest run`. The unit tests include `tests/unit/security-static.test.ts`:
   secret patterns in tracked files, `NEXT_PUBLIC_` secrets, service-role use, client imports, and migrations
   that disable RLS, open buckets or grant to anon. A failure stops the production build.
+- Unit tests are **hermetic** (`tests/setup/hermetic.ts`). Because they run inside the production build, the
+  setup strips every server secret from the environment and blocks real network calls. No test can send a
+  production credential anywhere.
 - **GitHub Actions** (`.github/workflows/security.yml`): typecheck, lint, unit tests, and the full database suite.
   That suite covers RLS/tenancy, invariants, concurrency, money parity and the security baseline.
 
@@ -158,4 +161,5 @@ fails `security_invariants.test.sql`. Every function pins `search_path = ''` and
 
 | Date | What | Action |
 |---|---|---|
+| 2026-10-16 | The first gated Vercel build failed: a diagnostics unit test reached the network with the build's real environment present. The deploy was blocked as designed. | Tests made hermetic; diagnostics never sends a publishable or malformed key; regression tests added |
 | 2026-10-16 | Fine-grained GitHub token (scope: Contents RW, repo `veritaro-sap`, 7 days) pasted into an AI chat to unblock a push | Owner to delete the `veritaro-push` token; future pushes via repository authorisation |

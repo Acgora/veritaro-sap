@@ -34,7 +34,9 @@ export async function runAIDiagnostics(env: Record<string, string | undefined> =
   }
 
   let rows: RouteRow[] | null = null;
-  if (secret) {
+  // Only try the database with something that looks like a real secret key (never send a publishable or
+  // malformed value anywhere).
+  if (secret && !secret.startsWith("sb_publishable_") && looksLikeSecret(secret)) {
     const svc = createServiceClient();
     const { data, error } = svc
       ? await svc.from("ai_model_routes").select("tier, provider, model, enabled, max_output_tokens, timeout_ms, reasoning_effort")

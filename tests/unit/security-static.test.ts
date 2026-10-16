@@ -87,3 +87,12 @@ describe("migrations never disable RLS or open storage", () => {
     expect(migrations.filter((f) => re.test(sql(f)))).toEqual([]);
   });
 });
+
+describe("unit tests are hermetic (they run inside the production build)", () => {
+  it("server secrets are stripped from the test environment", () => {
+    expect(Object.keys(process.env).filter((k) => /SECRET|SERVICE_ROLE|^AI_PROVIDER_/.test(k))).toEqual([]);
+  });
+  it("real network calls are blocked", async () => {
+    await expect(fetch("https://example.com")).rejects.toThrow(/Network access blocked/);
+  });
+});
