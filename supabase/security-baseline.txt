@@ -1,0 +1,289 @@
+bucket | documents public=false limit=10485760 types=application/pdf
+bucket | job-photos public=false limit=8388608 types=image/jpeg,image/png,image/webp
+column_grant | ai_actions.decided_at authenticated UPDATE
+column_grant | ai_actions.result authenticated UPDATE
+column_grant | ai_actions.status authenticated UPDATE
+column_grant | document_sequences.pad authenticated UPDATE
+column_grant | document_sequences.prefix authenticated UPDATE
+column_grant | jobs.actual_end authenticated SELECT
+column_grant | jobs.actual_start authenticated SELECT
+column_grant | jobs.archived_at authenticated SELECT
+column_grant | jobs.cancel_reason authenticated SELECT
+column_grant | jobs.cancelled_at authenticated SELECT
+column_grant | jobs.completed_at authenticated SELECT
+column_grant | jobs.completed_by authenticated SELECT
+column_grant | jobs.completion_notes authenticated SELECT
+column_grant | jobs.contact_id authenticated SELECT
+column_grant | jobs.created_at authenticated SELECT
+column_grant | jobs.created_by authenticated SELECT
+column_grant | jobs.customer_id authenticated SELECT
+column_grant | jobs.description authenticated SELECT
+column_grant | jobs.id authenticated SELECT
+column_grant | jobs.job_number authenticated SELECT
+column_grant | jobs.lead_id authenticated SELECT
+column_grant | jobs.organisation_id authenticated SELECT
+column_grant | jobs.priority authenticated SELECT
+column_grant | jobs.quote_id authenticated SELECT
+column_grant | jobs.scheduled_end authenticated SELECT
+column_grant | jobs.scheduled_start authenticated SELECT
+column_grant | jobs.site_address_id authenticated SELECT
+column_grant | jobs.status authenticated SELECT
+column_grant | jobs.title authenticated SELECT
+column_grant | jobs.updated_at authenticated SELECT
+column_grant | notifications.read_at authenticated UPDATE
+function_exec | ai_begin_request(uuid,uuid,text,text,text,integer,integer) definer=true anon=false authenticated=false search_path_set=true
+function_exec | ai_effective_limits(uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | ai_finish_request(uuid,text) definer=true anon=false authenticated=false search_path_set=true
+function_exec | ai_purge_old_conversations(integer) definer=true anon=false authenticated=false search_path_set=true
+function_exec | ai_record_usage(uuid,text,text,text,text,integer,integer,integer,text,integer,integer) definer=true anon=false authenticated=false search_path_set=true
+function_exec | ai_release_stale_reservations(interval) definer=true anon=false authenticated=false search_path_set=true
+function_exec | ai_usage_summary(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.active_owner_count(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.activity_log_immutable() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.after_message() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.ai_cost_usd(text,text,integer,integer,integer) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.ai_notify_usage(uuid,text,text,text) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.ai_usage_events_immutable() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.apply_invoice_payments(uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_customer_children() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_customers() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_invoices() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_job_children() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_jobs() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_leads() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_organisation_members() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_organisation_settings() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_organisations() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_quotes() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.audit_tasks() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.can_access_job(uuid,boolean) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.copy_quote_items_to_invoice(uuid,uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.create_financial_settings() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.create_notification(uuid,uuid,text,text,text,text,uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.document_snapshot(uuid,uuid,uuid,uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.documents_immutable() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.format_address(text,text,text,text,text,text) definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_conversations() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_customer_children() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_customers() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_invoices() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_job_children() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_jobs() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_leads() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_messages() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_organisation_members() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_organisations() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_quotes() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.guard_tasks() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.handle_new_user() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.has_permission(uuid,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.invoice_item_compute() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.invoice_items_after() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.invoice_items_guard_delete() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.invoices_after_update() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.is_active_member(uuid,uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.is_client_role() definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.line_amounts(numeric,numeric,text,numeric,boolean,numeric,boolean,boolean) definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.linked_customer_ids() definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.lock_invoice_for(uuid,text) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.lock_quote_for(uuid,text) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.log_activity(uuid,text,text,uuid,jsonb) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.member_role(uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.money(numeric) definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.my_assigned_job_ids() definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.my_org_ids() definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.next_document_number(uuid,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.org_ids_with_permission(text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | app_private.payments_immutable() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.quote_item_compute() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.quote_items_after() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.quote_items_guard_delete() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.quotes_after_update() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.refresh_invoice_totals(uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.refresh_quote_totals(uuid) definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.request_actor_type() definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.set_updated_at() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.storage_entity_id(text) definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.storage_org_id(text) definer=false anon=false authenticated=true search_path_set=true
+function_exec | app_private.validate_org_timezone() definer=false anon=false authenticated=false search_path_set=true
+function_exec | app_private.validate_task_relation() definer=true anon=false authenticated=false search_path_set=true
+function_exec | app_private.visible_profile_ids() definer=true anon=false authenticated=true search_path_set=true
+function_exec | archive_invoice(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | convert_lead_to_customer(uuid,uuid,boolean) definer=false anon=false authenticated=true search_path_set=true
+function_exec | create_customer(uuid,jsonb,jsonb,jsonb) definer=false anon=false authenticated=true search_path_set=true
+function_exec | create_invoice_from_job(uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | create_invoice_from_quote(uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | create_job_from_quote(uuid,timestamp with time zone,timestamp with time zone,text) definer=false anon=false authenticated=true search_path_set=true
+function_exec | create_organisation(text,text,text,text,text,text,text,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | customer_balance(uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | duplicate_quote(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | find_customer_duplicates(uuid,text,text,text,text,uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | find_schedule_conflicts(uuid,timestamp with time zone,timestamp with time zone,uuid[],uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | get_field_job(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | get_job_internal_notes(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | get_my_permissions(uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | global_search(uuid,text,integer) definer=false anon=false authenticated=true search_path_set=true
+function_exec | invoice_effective_status(text,date,numeric,text) definer=false anon=false authenticated=true search_path_set=true
+function_exec | issue_invoice(uuid) definer=true anon=false authenticated=true search_path_set=true
+function_exec | issue_quote(uuid,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | list_my_jobs(uuid,timestamp with time zone,timestamp with time zone) definer=true anon=false authenticated=true search_path_set=true
+function_exec | log_communication(uuid,text,text,text,uuid,uuid,uuid,uuid,uuid,uuid,timestamp with time zone,text) definer=false anon=false authenticated=true search_path_set=true
+function_exec | mark_notifications_read(uuid,uuid[]) definer=false anon=false authenticated=true search_path_set=true
+function_exec | quote_effective_status(text,date,text) definer=false anon=false authenticated=true search_path_set=true
+function_exec | record_payment(uuid,numeric,date,text,text,text,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | set_job_status(uuid,text,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | set_quote_outcome(uuid,text,text,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | today_summary(uuid) definer=false anon=false authenticated=true search_path_set=true
+function_exec | void_invoice(uuid,text) definer=true anon=false authenticated=true search_path_set=true
+function_exec | void_payment(uuid,text) definer=true anon=false authenticated=true search_path_set=true
+policy | activity_log.activity_log_select SELECT authenticated permissive=PERMISSIVE
+policy | ai_actions.ai_actions_own_insert INSERT authenticated permissive=PERMISSIVE
+policy | ai_actions.ai_actions_own_select SELECT authenticated permissive=PERMISSIVE
+policy | ai_actions.ai_actions_own_update UPDATE authenticated permissive=PERMISSIVE
+policy | ai_conversations.ai_conversations_own ALL authenticated permissive=PERMISSIVE
+policy | ai_messages.ai_messages_own_insert INSERT authenticated permissive=PERMISSIVE
+policy | ai_messages.ai_messages_own_select SELECT authenticated permissive=PERMISSIVE
+policy | conversation_participants.participants_insert INSERT authenticated permissive=PERMISSIVE
+policy | conversation_participants.participants_select SELECT authenticated permissive=PERMISSIVE
+policy | conversation_reads.conversation_reads_own ALL authenticated permissive=PERMISSIVE
+policy | conversations.conversations_insert INSERT authenticated permissive=PERMISSIVE
+policy | conversations.conversations_select SELECT authenticated permissive=PERMISSIVE
+policy | conversations.conversations_update UPDATE authenticated permissive=PERMISSIVE
+policy | customer_addresses.customer_addresses_select SELECT authenticated permissive=PERMISSIVE
+policy | customer_addresses.customer_addresses_write ALL authenticated permissive=PERMISSIVE
+policy | customer_contacts.customer_contacts_select SELECT authenticated permissive=PERMISSIVE
+policy | customer_contacts.customer_contacts_write ALL authenticated permissive=PERMISSIVE
+policy | customers.customers_insert INSERT authenticated permissive=PERMISSIVE
+policy | customers.customers_select SELECT authenticated permissive=PERMISSIVE
+policy | customers.customers_update UPDATE authenticated permissive=PERMISSIVE
+policy | document_sequences.doc_sequences_select SELECT authenticated permissive=PERMISSIVE
+policy | document_sequences.doc_sequences_update UPDATE authenticated permissive=PERMISSIVE
+policy | documents.documents_insert INSERT authenticated permissive=PERMISSIVE
+policy | documents.documents_select SELECT authenticated permissive=PERMISSIVE
+policy | invoice_items.invoice_items_select SELECT authenticated permissive=PERMISSIVE
+policy | invoice_items.invoice_items_write ALL authenticated permissive=PERMISSIVE
+policy | invoices.invoices_insert INSERT authenticated permissive=PERMISSIVE
+policy | invoices.invoices_select SELECT authenticated permissive=PERMISSIVE
+policy | invoices.invoices_update UPDATE authenticated permissive=PERMISSIVE
+policy | job_assignments.job_assignments_delete DELETE authenticated permissive=PERMISSIVE
+policy | job_assignments.job_assignments_insert INSERT authenticated permissive=PERMISSIVE
+policy | job_assignments.job_assignments_select SELECT authenticated permissive=PERMISSIVE
+policy | job_notes.job_notes_insert INSERT authenticated permissive=PERMISSIVE
+policy | job_notes.job_notes_select SELECT authenticated permissive=PERMISSIVE
+policy | job_photos.job_photos_insert INSERT authenticated permissive=PERMISSIVE
+policy | job_photos.job_photos_select SELECT authenticated permissive=PERMISSIVE
+policy | jobs.jobs_insert INSERT authenticated permissive=PERMISSIVE
+policy | jobs.jobs_select SELECT authenticated permissive=PERMISSIVE
+policy | jobs.jobs_update UPDATE authenticated permissive=PERMISSIVE
+policy | leads.leads_insert INSERT authenticated permissive=PERMISSIVE
+policy | leads.leads_select SELECT authenticated permissive=PERMISSIVE
+policy | leads.leads_update UPDATE authenticated permissive=PERMISSIVE
+policy | messages.messages_insert INSERT authenticated permissive=PERMISSIVE
+policy | messages.messages_select SELECT authenticated permissive=PERMISSIVE
+policy | messages.messages_update UPDATE authenticated permissive=PERMISSIVE
+policy | notifications.notifications_delete DELETE authenticated permissive=PERMISSIVE
+policy | notifications.notifications_select SELECT authenticated permissive=PERMISSIVE
+policy | notifications.notifications_update UPDATE authenticated permissive=PERMISSIVE
+policy | objects.documents_bucket_insert INSERT authenticated permissive=PERMISSIVE
+policy | objects.documents_bucket_read SELECT authenticated permissive=PERMISSIVE
+policy | objects.job_photos_bucket_insert INSERT authenticated permissive=PERMISSIVE
+policy | objects.job_photos_bucket_read SELECT authenticated permissive=PERMISSIVE
+policy | organisation_financial_settings.fin_settings_select SELECT authenticated permissive=PERMISSIVE
+policy | organisation_financial_settings.fin_settings_update UPDATE authenticated permissive=PERMISSIVE
+policy | organisation_members.organisation_members_delete DELETE authenticated permissive=PERMISSIVE
+policy | organisation_members.organisation_members_insert INSERT authenticated permissive=PERMISSIVE
+policy | organisation_members.organisation_members_select SELECT authenticated permissive=PERMISSIVE
+policy | organisation_members.organisation_members_update UPDATE authenticated permissive=PERMISSIVE
+policy | organisation_settings.organisation_settings_select SELECT authenticated permissive=PERMISSIVE
+policy | organisation_settings.organisation_settings_update UPDATE authenticated permissive=PERMISSIVE
+policy | organisations.organisations_select SELECT authenticated permissive=PERMISSIVE
+policy | organisations.organisations_update UPDATE authenticated permissive=PERMISSIVE
+policy | payments.payments_select SELECT authenticated permissive=PERMISSIVE
+policy | permissions.permissions_read SELECT authenticated permissive=PERMISSIVE
+policy | profiles.profiles_insert_self INSERT authenticated permissive=PERMISSIVE
+policy | profiles.profiles_select SELECT authenticated permissive=PERMISSIVE
+policy | profiles.profiles_update_self UPDATE authenticated permissive=PERMISSIVE
+policy | quote_items.quote_items_select SELECT authenticated permissive=PERMISSIVE
+policy | quote_items.quote_items_write ALL authenticated permissive=PERMISSIVE
+policy | quotes.quotes_insert INSERT authenticated permissive=PERMISSIVE
+policy | quotes.quotes_select SELECT authenticated permissive=PERMISSIVE
+policy | quotes.quotes_update UPDATE authenticated permissive=PERMISSIVE
+policy | role_permissions.role_permissions_read SELECT authenticated permissive=PERMISSIVE
+policy | roles.roles_read SELECT authenticated permissive=PERMISSIVE
+policy | tasks.tasks_delete DELETE authenticated permissive=PERMISSIVE
+policy | tasks.tasks_insert INSERT authenticated permissive=PERMISSIVE
+policy | tasks.tasks_select SELECT authenticated permissive=PERMISSIVE
+policy | tasks.tasks_update UPDATE authenticated permissive=PERMISSIVE
+rls | activity_log rls=true force=false
+rls | ai_actions rls=true force=false
+rls | ai_conversations rls=true force=false
+rls | ai_messages rls=true force=false
+rls | ai_model_prices rls=true force=false
+rls | ai_model_routes rls=true force=false
+rls | ai_org_limits rls=true force=false
+rls | ai_plans rls=true force=false
+rls | ai_requests rls=true force=false
+rls | ai_usage_events rls=true force=false
+rls | ai_usage_monthly rls=true force=false
+rls | conversation_participants rls=true force=false
+rls | conversation_reads rls=true force=false
+rls | conversations rls=true force=false
+rls | customer_addresses rls=true force=false
+rls | customer_contacts rls=true force=false
+rls | customers rls=true force=false
+rls | document_sequences rls=true force=false
+rls | documents rls=true force=false
+rls | invoice_items rls=true force=false
+rls | invoices rls=true force=false
+rls | job_assignments rls=true force=false
+rls | job_notes rls=true force=false
+rls | job_photos rls=true force=false
+rls | jobs rls=true force=false
+rls | leads rls=true force=false
+rls | messages rls=true force=false
+rls | notifications rls=true force=false
+rls | organisation_financial_settings rls=true force=false
+rls | organisation_members rls=true force=false
+rls | organisation_settings rls=true force=false
+rls | organisations rls=true force=false
+rls | payments rls=true force=false
+rls | permissions rls=true force=false
+rls | profiles rls=true force=false
+rls | quote_items rls=true force=false
+rls | quotes rls=true force=false
+rls | role_permissions rls=true force=false
+rls | roles rls=true force=false
+rls | tasks rls=true force=false
+table_grant | activity_log authenticated SELECT
+table_grant | ai_actions authenticated INSERT,SELECT
+table_grant | ai_conversations authenticated DELETE,INSERT,SELECT,UPDATE
+table_grant | ai_messages authenticated INSERT,SELECT
+table_grant | conversation_participants authenticated INSERT,SELECT
+table_grant | conversation_reads authenticated INSERT,SELECT,UPDATE
+table_grant | conversations authenticated INSERT,SELECT,UPDATE
+table_grant | customer_addresses authenticated DELETE,INSERT,SELECT,UPDATE
+table_grant | customer_contacts authenticated DELETE,INSERT,SELECT,UPDATE
+table_grant | customers authenticated INSERT,SELECT,UPDATE
+table_grant | document_sequences authenticated SELECT
+table_grant | documents authenticated INSERT,SELECT
+table_grant | invoice_items authenticated DELETE,INSERT,SELECT,UPDATE
+table_grant | invoices authenticated INSERT,SELECT,UPDATE
+table_grant | job_assignments authenticated DELETE,INSERT,SELECT
+table_grant | job_notes authenticated INSERT,SELECT
+table_grant | job_photos authenticated INSERT,SELECT
+table_grant | jobs authenticated INSERT,UPDATE
+table_grant | leads authenticated INSERT,SELECT,UPDATE
+table_grant | messages authenticated INSERT,SELECT,UPDATE
+table_grant | notifications authenticated DELETE,SELECT
+table_grant | organisation_financial_settings authenticated SELECT,UPDATE
+table_grant | organisation_members authenticated DELETE,INSERT,SELECT,UPDATE
+table_grant | organisation_settings authenticated SELECT,UPDATE
+table_grant | organisations authenticated SELECT,UPDATE
+table_grant | payments authenticated SELECT
+table_grant | permissions authenticated SELECT
+table_grant | profiles authenticated INSERT,SELECT,UPDATE
+table_grant | quote_items authenticated DELETE,INSERT,SELECT,UPDATE
+table_grant | quotes authenticated INSERT,SELECT,UPDATE
+table_grant | role_permissions authenticated SELECT
+table_grant | roles authenticated SELECT
+table_grant | tasks authenticated DELETE,INSERT,SELECT,UPDATE

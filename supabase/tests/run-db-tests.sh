@@ -17,4 +17,12 @@ for t in "$DIR"/tests/*.test.sql; do
 done
 TEST_DB="$DB" "$DIR/tests/concurrency.sh"
 (cd "$DIR/.." && npx esbuild src/lib/money-calc.ts --format=esm --outfile=.parity-build/money-calc.mjs --log-level=warning && node scripts/money-parity.mjs "$DB")
+# Security drift guard: the security-relevant configuration must equal the reviewed baseline.
+if ! diff -u "$DIR/security-baseline.txt" <(psql -q -At -d "$DB" -f "$DIR/../scripts/security-baseline.sql") > /tmp/security-baseline.diff; then
+  cat /tmp/security-baseline.diff
+  echo "✘ security configuration differs from supabase/security-baseline.txt."
+  echo "  Review the change against SECURITY.md, then run: npm run security:baseline"
+  exit 1
+fi
+echo "  security-baseline: matches supabase/security-baseline.txt"
 echo "✔ database tests passed"

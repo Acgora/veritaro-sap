@@ -13,7 +13,10 @@
     "test:e2e": "node tests/e2e/smoke.mjs",
     "test:e2e:roles": "node tests/e2e/roles.mjs",
     "db:types": "supabase gen types typescript --project-id zqibpgbbchypqqyopxoh > src/types/database.types.ts",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "prebuild": "vitest run",
+    "security:baseline": "psql -q -At -d ${TEST_DB:-veritaro_test} -f scripts/security-baseline.sql > supabase/security-baseline.txt",
+    "security:drift": "./scripts/security-drift.sh"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",

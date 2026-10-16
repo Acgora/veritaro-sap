@@ -1,0 +1,45 @@
+# Security gate (SECURITY.md §6). Required check for main: Vercel production promotion waits on it
+# when "Deployment Checks" is enabled in Vercel (see SECURITY.md §6.3).
+name: security-gate
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL_READONLY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit + static security tests
+        run: npm test
+      - name: Database security, RLS, tenancy, concurrency, money parity, security baseline
+        run: npm run test:db
+      - name: Live security drift (only when the read-only DB URL secret is configured)
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        run: npm run security:drift
