@@ -5,7 +5,7 @@ import { describeActivity } from "@/domain/activity/describe";
 import type { ActivityItem } from "@/domain/activity/service";
 import { formatRelative } from "@/lib/dates";
 
-export function ActivityFeed({ items }: { items: ActivityItem[] }) {
+export function ActivityFeed({ items, currency = "ZAR" }: { items: ActivityItem[]; currency?: string }) {
   if (items.length === 0) {
     return (
       <EmptyState
@@ -22,7 +22,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
         <li key={item.id} className="flex items-start gap-2.5">
           <UserAvatar size="sm" name={item.actorType === "ai" ? "AI" : item.actorName} />
           <div className="min-w-0 text-sm">
-            <p className="leading-snug">{describeActivity(item)}</p>
+            <p className="leading-snug">{describeActivity(item, { currency })}</p>
             <p className="text-xs text-muted-foreground">
               <time dateTime={item.createdAt} suppressHydrationWarning>{formatRelative(item.createdAt)}</time>
             </p>

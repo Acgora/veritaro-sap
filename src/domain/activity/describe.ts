@@ -1,9 +1,131 @@
 import type { ActivityItem } from "./service";
+import { formatMoney } from "@/lib/money";
+
+type DescribeInput = Pick<ActivityItem, "action" | "metadata" | "actorType" | "actorName"> & { actorUserId?: string | null };
+
+const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
+
+const LEAD_STATUS_WORDS: Record<string, string> = {
+  new: "New", contacted: "Contacted", qualified: "Qualified", quote_needed: "Quote needed", quote_sent: "Quote sent", won: "Won", lost: "Lost",
+};
+const COMM_KIND_WORDS: Record<string, string> = {
+  call: "Call", meeting: "Meeting", message: "Message", email: "Email", note: "Note", whatsapp: "WhatsApp message", sms: "SMS",
+};
+
+/**
+ * " by Sam" / " by AI on behalf of Sam" / "" (system). Phase 003 lifecycle sentences put the
+ * record first ("Quote Q-0003 accepted") and the actor last.
+ */
+function byline(item: DescribeInput): string {
+  if (item.actorType === "ai") return item.actorName ? ` by AI on behalf of ${item.actorName}` : " by AI";
+  if (item.actorType === "user") return item.actorName ? ` by ${item.actorName}` : "";
+  return "";
+}
+
+function money(v: unknown, currency: string): string | null {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  if (!Number.isFinite(n)) return null;
+  return formatMoney(n.toFixed(2), currency);
+}
+
+/** Sentences for Phase 003 lifecycle actions (leads, inbox, quotes, jobs, invoices, payments). null = not a lifecycle action. */
+function describeLifecycle(item: DescribeInput, currency: string): string | null {
+  const m = item.metadata;
+  const by = byline(item);
+  const quote = `Quote ${str(m.quote_number) ?? ""}`.trim();
+  const job = `Job ${str(m.job_number) ?? ""}`.trim();
+  const invNo = str(m.invoice_number);
+  const invoice = invNo ? `Invoice ${invNo}` : "Draft invoice";
+  const lead = str(m.title) ? `Lead “${str(m.title)}”` : "Lead";
+  switch (item.action) {
+    // Leads
+    case "lead_created":
+      return `New lead${str(m.title) ? ` “${str(m.title)}”` : ""} added${by}`;
+    case "lead_status_changed": {
+      const to = str(m.to);
+      return `${lead} moved to ${to ? (LEAD_STATUS_WORDS[to] ?? to.replace(/_/g, " ")) : "a new stage"}${by}`;
+    }
+    case "lead_archived":
+      return `${lead} archived${by}`;
+    case "lead_converted":
+      return `${lead} converted to customer${by}`;
+    // Inbox
+    case "communication_logged": {
+      const kind = str(m.kind);
+      const label = (kind && COMM_KIND_WORDS[kind]) || "Communication";
+      return `${label} logged${by}`;
+    }
+    // Quotes
+    case "quote_created":
+      return `${quote} created${by}`;
+    case "quote_issued":
+      return `${quote} sent${by}`;
+    case "quote_viewed":
+      return `${quote} viewed by the customer`;
+    case "quote_accepted":
+      return `${quote} accepted${by}`;
+    case "quote_declined":
+      return `${quote} declined${by}`;
+    case "quote_expired":
+      return `${quote} expired`;
+    case "quote_archived":
+      return `${quote} archived${by}`;
+    case "quote_status_changed":
+      return `${quote} marked ${String(m.to ?? "updated").replace(/_/g, " ")}${by}`;
+    // Jobs
+    case "job_created":
+      return `${job} created${m.quote_id ? " from a quote" : ""}${by}`;
+    case "job_scheduled":
+      return `${job} ${m.previous ? "rescheduled" : "scheduled"}${by}`;
+    case "job_started":
+      return `${job} started${by}`;
+    case "job_completed":
+      return `${job} completed${by}`;
+    case "job_cancelled":
+      return `${job} cancelled${by}`;
+    case "job_assigned":
+      return `Team member assigned to ${job.replace(/^Job/, "job")}${by}`;
+    case "job_unassigned":
+      return `Team member removed from ${job.replace(/^Job/, "job")}${by}`;
+    case "job_note_added":
+      return `Note added to ${job.replace(/^Job/, "job")}${by}`;
+    case "job_photo_added":
+      return `Photo added to ${job.replace(/^Job/, "job")}${by}`;
+    // Invoices
+    case "invoice_created":
+      return `${invNo ? `Invoice ${invNo}` : "Draft invoice"} created${m.job_id ? " from a job" : m.quote_id ? " from a quote" : ""}${by}`;
+    case "invoice_issued":
+      return `${invoice} issued${by}`;
+    case "invoice_paid":
+      return `${invoice} paid in full`;
+    case "invoice_voided":
+      return `${invoice} voided${by}`;
+    case "invoice_archived":
+      return `${invoice} archived${by}`;
+    case "invoice_status_changed": {
+      const to = str(m.to);
+      if (to === "partially_paid") return `${invoice} is now part paid`;
+      if (to === "issued") return `${invoice} is unpaid again`;
+      return `${invoice} marked ${to ? to.replace(/_/g, " ") : "updated"}${by}`;
+    }
+    // Payments
+    case "payment_recorded": {
+      const amt = money(m.amount, currency);
+      return `Payment${amt ? ` of ${amt}` : ""} recorded against ${invNo ?? "an invoice"}${by}`;
+    }
+    case "payment_voided": {
+      const amt = money(m.amount, currency);
+      return `Payment${amt ? ` of ${amt}` : ""} on ${invNo ?? "an invoice"} voided${by}`;
+    }
+    default:
+      return null;
+  }
+}
 
 /** Human-readable sentence for an activity entry. Pure + unit-tested. */
-export function describeActivity(
-  item: Pick<ActivityItem, "action" | "metadata" | "actorType" | "actorName"> & { actorUserId?: string | null },
-): string {
+export function describeActivity(item: DescribeInput, opts: { currency?: string } = {}): string {
+  const lifecycle = describeLifecycle(item, opts.currency ?? "ZAR");
+  if (lifecycle !== null) return lifecycle;
   const who = item.actorType === "ai" ? "The assistant" : item.actorType === "system" ? "System" : (item.actorName ?? "Someone");
   const title = typeof item.metadata.title === "string" ? `“${item.metadata.title}”` : "a task";
   const name = typeof item.metadata.name === "string" ? `“${item.metadata.name}”` : "a customer";

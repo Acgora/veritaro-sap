@@ -7,13 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
-import { EmptyState } from "@/components/common/empty-state";
+import { EmptyState, ErrorState } from "@/components/common/empty-state";
+import { EntityStatus } from "@/components/common/entity-status";
 import { FormField } from "@/components/common/form-field";
 import { StatusBadge } from "@/components/common/status-badge";
 import { ActivityFeed } from "@/components/today/activity-feed";
 import { CHANNEL_LABELS, CUSTOMER_TYPE_LABELS } from "@/domain/customers/schema";
 import type { CustomerDetail as Detail } from "@/domain/customers/service";
 import type { ActivityItem } from "@/domain/activity/service";
+import type { CustomerBalance, CustomerInvoiceRow, CustomerJobRow, CustomerQuoteRow } from "@/domain/customers/lifecycle";
+import { formatMoney } from "@/lib/money";
 import { TASK_STATUS_LABELS, type TaskStatus } from "@/domain/tasks/schema";
 import { formatDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -23,13 +26,26 @@ import {
 import { CustomerForm } from "./customer-form";
 import { whatsappHref } from "./customers-list";
 
-const TABS = [
+const BASE_TABS = [
   { key: "overview", label: "Overview" },
   { key: "contacts", label: "Contacts" },
   { key: "sites", label: "Sites" },
-  { key: "tasks", label: "Tasks" },
-  { key: "activity", label: "Activity" },
 ] as const;
+
+/** Date-only column (YYYY-MM-DD) → "16 Oct 2026" without timezone drift. */
+function formatDay(d: string | null): string {
+  if (!d) return "—";
+  return new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
+}
+const amount = (n: number, currency: string) => formatMoney(n.toFixed(2), currency);
+
+export interface CustomerLifecycle {
+  quotes: CustomerQuoteRow[];
+  jobs: CustomerJobRow[];
+  invoices: CustomerInvoiceRow[];
+  balance: CustomerBalance | null;
+  error: string | null;
+}
 
 interface TaskRow { id: string; title: string; status: string; priority: string; due_at: string | null }
 
@@ -37,11 +53,24 @@ export function CustomerDetailView(props: {
   detail: Detail;
   tasks: TaskRow[];
   activity: ActivityItem[];
+  lifecycle: CustomerLifecycle;
   tab: string;
   timeZone: string;
-  can: { update: boolean; archive: boolean; createTask: boolean; readActivity: boolean };
+  currency: string;
+  can: {
+    update: boolean; archive: boolean; createTask: boolean; readActivity: boolean;
+    readQuotes: boolean; writeQuotes: boolean; readJobs: boolean; writeJobs: boolean; readInvoices: boolean; writeInvoices: boolean;
+  };
 }) {
-  const { detail, tasks, activity, tab, timeZone, can } = props;
+  const { detail, tasks, activity, lifecycle, tab, timeZone, currency, can } = props;
+  const tabs = [
+    ...BASE_TABS,
+    ...(can.readQuotes ? [{ key: "quotes", label: "Quotes" }] : []),
+    ...(can.readJobs ? [{ key: "jobs", label: "Jobs" }] : []),
+    ...(can.readInvoices ? [{ key: "invoices", label: "Invoices" }] : []),
+    { key: "tasks", label: "Tasks" },
+    { key: "activity", label: "Activity" },
+  ];
   const c = detail.customer;
   const [editing, setEditing] = useState(false);
   const [addingContact, setAddingContact] = useState(false);
@@ -99,7 +128,7 @@ export function CustomerDetailView(props: {
       </header>
 
       <nav aria-label="Customer sections" className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <Link
             key={t.key}
             href={`?tab=${t.key}`}
@@ -110,10 +139,9 @@ export function CustomerDetailView(props: {
             {t.label}
           </Link>
         ))}
-        {["Quotes", "Jobs", "Invoices"].map((l) => (
-          <span key={l} className="whitespace-nowrap px-3 py-2 text-sm text-muted-foreground/60" title="Coming in a later build phase">{l} · soon</span>
-        ))}
       </nav>
+
+      {tab === "overview" && lifecycle.balance ? <BalanceSummary balance={lifecycle.balance} currency={currency} linkToInvoices /> : null}
 
       {tab === "overview" ? (
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 rounded-lg border border-border bg-surface p-4 text-sm sm:grid-cols-2">
@@ -190,6 +218,91 @@ export function CustomerDetailView(props: {
         </section>
       ) : null}
 
+      {lifecycle.error && (tab === "quotes" || tab === "jobs" || tab === "invoices") ? <ErrorState message={lifecycle.error} /> : null}
+
+      {tab === "quotes" && !lifecycle.error ? (
+        <section aria-label="Quotes">
+          {can.writeQuotes && !archived ? (
+            <div className="mb-2 flex justify-end"><Button asChild size="sm"><Link href={`/app/sales/quotes/new?customer=${c.id}`}><Plus /> New quote</Link></Button></div>
+          ) : null}
+          {lifecycle.quotes.length === 0 ? (
+            <div className="rounded-lg border border-border bg-surface"><EmptyState compact title="No quotes for this customer yet" /></div>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+              {lifecycle.quotes.map((q) => (
+                <li key={q.id}>
+                  <Link href={`/app/sales/quotes/${q.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2.5 text-sm hover:bg-surface-raised">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{q.quoteNumber}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        Issued {formatDay(q.issueDate)}{q.expiryDate ? ` · valid until ${formatDay(q.expiryDate)}` : ""}
+                      </span>
+                    </span>
+                    <span className="tabular-nums">{amount(q.total, q.currency)}</span>
+                    <EntityStatus entity="quote" status={q.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
+      {tab === "jobs" && !lifecycle.error ? (
+        <section aria-label="Jobs">
+          {can.writeJobs && !archived ? (
+            <div className="mb-2 flex justify-end"><Button asChild size="sm"><Link href={`/app/work/jobs?new=1&customer=${c.id}`}><Plus /> New job</Link></Button></div>
+          ) : null}
+          {lifecycle.jobs.length === 0 ? (
+            <div className="rounded-lg border border-border bg-surface"><EmptyState compact title="No jobs for this customer yet" /></div>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+              {lifecycle.jobs.map((j) => (
+                <li key={j.id}>
+                  <Link href={`/app/work/jobs/${j.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2.5 text-sm hover:bg-surface-raised">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{j.jobNumber} · {j.title}</span>
+                      <span className="block text-xs text-muted-foreground">{j.scheduledStart ? formatDateTime(j.scheduledStart, timeZone) : "Not scheduled"}</span>
+                    </span>
+                    <EntityStatus entity="job" status={j.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
+      {tab === "invoices" && !lifecycle.error ? (
+        <section aria-label="Invoices">
+          {lifecycle.balance ? <BalanceSummary balance={lifecycle.balance} currency={currency} /> : null}
+          {can.writeInvoices && !archived ? (
+            <div className="mb-2 flex justify-end"><Button asChild size="sm"><Link href={`/app/money/invoices?new=1&customer=${c.id}`}><Plus /> New invoice</Link></Button></div>
+          ) : null}
+          {lifecycle.invoices.length === 0 ? (
+            <div className="rounded-lg border border-border bg-surface"><EmptyState compact title="No invoices for this customer yet" /></div>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+              {lifecycle.invoices.map((i) => (
+                <li key={i.id}>
+                  <Link href={`/app/money/invoices/${i.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2.5 text-sm hover:bg-surface-raised">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{i.invoiceNumber ?? "Draft invoice"}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {i.dueDate ? `Due ${formatDay(i.dueDate)}` : "No due date"}
+                        {i.amountDue > 0 && i.status !== "draft" && i.status !== "void" ? ` · ${amount(i.amountDue, i.currency)} due` : ""}
+                      </span>
+                    </span>
+                    <span className="tabular-nums">{amount(i.total, i.currency)}</span>
+                    <EntityStatus entity="invoice" status={i.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
       {tab === "tasks" ? (
         <section aria-label="Tasks">
           {can.createTask && !archived ? (
@@ -213,7 +326,7 @@ export function CustomerDetailView(props: {
 
       {tab === "activity" ? (
         <section aria-label="Activity" className="rounded-lg border border-border bg-surface p-4">
-          {can.readActivity ? <ActivityFeed items={activity} /> : <p className="text-sm text-muted-foreground">Activity history isn&apos;t available for your role.</p>}
+          {can.readActivity ? <ActivityFeed items={activity} currency={currency} /> : <p className="text-sm text-muted-foreground">Activity history isn&apos;t available for your role.</p>}
         </section>
       ) : null}
 
@@ -233,6 +346,29 @@ export function CustomerDetailView(props: {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** Balance from public.customer_balance — SQL totals only. */
+function BalanceSummary({ balance, currency, linkToInvoices = false }: { balance: CustomerBalance; currency: string; linkToInvoices?: boolean }) {
+  const cur = balance.currency ?? currency;
+  const cells = [
+    { label: "Outstanding", value: amount(balance.outstanding, cur), hint: `${balance.openInvoices} open invoice${balance.openInvoices === 1 ? "" : "s"}`, tone: "" },
+    { label: "Overdue", value: amount(balance.overdue, cur), hint: balance.overdue > 0 ? "Past due date" : "Nothing overdue", tone: balance.overdue > 0 ? "text-danger" : "" },
+    { label: "Paid", value: amount(balance.paidTotal, cur), hint: "On issued invoices", tone: "" },
+  ];
+  const cls = "mb-4 grid grid-cols-3 gap-2 rounded-lg border border-border bg-surface p-3";
+  const body = cells.map((x) => (
+        <div key={x.label} className="min-w-0">
+          <p className="text-xs text-muted-foreground">{x.label}</p>
+          <p className={cn("truncate text-base font-semibold tabular-nums", x.tone)}>{x.value}</p>
+          <p className="truncate text-xs text-muted-foreground">{x.hint}</p>
+        </div>
+  ));
+  return linkToInvoices ? (
+    <Link href="?tab=invoices" scroll={false} aria-label="Customer balance — view invoices" className={cn(cls, "hover:bg-surface-raised")}>{body}</Link>
+  ) : (
+    <section aria-label="Customer balance" className={cls}>{body}</section>
   );
 }
 

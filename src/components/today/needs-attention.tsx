@@ -1,56 +1,48 @@
 import Link from "next/link";
-import { AlertTriangle, Banknote, Briefcase, CalendarCheck, FileSignature, Target, UserPlus, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ChevronRight, CircleAlert, CircleCheck, Info } from "lucide-react";
+import type { AttentionItem } from "@/domain/today/service";
 import { cn } from "@/lib/utils";
 
-interface Tile {
-  label: string;
-  icon: LucideIcon;
-  href: string;
-  /** null = module not available yet (no fake numbers). */
-  value: number | null;
-  hint: string;
-  tone?: "default" | "warning";
-}
+const ICON = { danger: CircleAlert, warning: AlertTriangle, info: Info } as const;
+const TONE = {
+  danger: "bg-danger-soft text-danger",
+  warning: "bg-warning-soft text-warning",
+  info: "bg-info-soft text-primary",
+} as const;
 
-function AttentionTile({ tile }: { tile: Tile }) {
-  const Icon = tile.icon;
-  return (
-    <Link
-      href={tile.href}
-      className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:bg-surface-raised"
-    >
-      <span className={cn("rounded-md p-1.5", tile.tone === "warning" && tile.value ? "bg-warning-soft text-warning" : "bg-muted text-muted-foreground")}>
-        <Icon className="size-4" aria-hidden />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-xs text-muted-foreground">{tile.label}</span>
-        {tile.value === null ? (
-          <span className="block text-sm text-muted-foreground">Not set up yet</span>
-        ) : (
-          <span className="block text-lg font-semibold tabular-nums leading-tight">{tile.value}</span>
-        )}
-        <span className="block truncate text-xs text-muted-foreground">{tile.hint}</span>
-      </span>
-    </Link>
-  );
-}
-
-export function NeedsAttention({ overdueTasks, dueTodayTasks, newCustomers }: { overdueTasks: number; dueTodayTasks: number; newCustomers: number | null }) {
-  const tiles: Tile[] = [
-    { label: "Overdue tasks", icon: AlertTriangle, href: "/app/work/tasks", value: overdueTasks, hint: overdueTasks ? "Past their due date" : "Nothing overdue", tone: "warning" },
-    { label: "Tasks due today", icon: CalendarCheck, href: "/app/work/tasks", value: dueTodayTasks, hint: dueTodayTasks ? "Due before midnight" : "Nothing due today" },
-    { label: "Outstanding money", icon: Banknote, href: "/app/money/invoices", value: null, hint: "Available once invoicing is live" },
-    { label: "New customers this week", icon: UserPlus, href: "/app/sales/customers", value: newCustomers, hint: newCustomers === null ? "Not available for your role" : newCustomers ? "Added in the last 7 days" : "None added this week" },
-    { label: "New leads", icon: Target, href: "/app/sales/leads", value: null, hint: "Available once leads are live" },
-    { label: "Jobs today", icon: Briefcase, href: "/app/work/jobs", value: null, hint: "Available once jobs are live" },
-    { label: "Quotes to follow up", icon: FileSignature, href: "/app/sales/quotes", value: null, hint: "Available once quotes are live" },
-  ];
-  return (
-    <section aria-labelledby="attention-heading">
-      <h2 id="attention-heading" className="mb-2 text-sm font-semibold">Needs attention</h2>
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-        {tiles.map((t) => <AttentionTile key={t.label} tile={t} />)}
+/** Prioritised, actionable list built by buildAttentionItems. Each row links straight to the fix. */
+export function NeedsAttention({ items }: { items: AttentionItem[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4">
+        <span className="rounded-full bg-success-soft p-2 text-success"><CircleCheck className="size-5" aria-hidden /></span>
+        <div>
+          <p className="text-sm font-medium">Nothing needs your attention right now</p>
+          <p className="text-sm text-muted-foreground">Overdue invoices, unanswered quotes, new leads and unassigned jobs will show up here.</p>
+        </div>
       </div>
-    </section>
+    );
+  }
+  return (
+    <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+      {items.map((i) => {
+        const Icon = ICON[i.severity];
+        return (
+          <li key={i.key}>
+            <Link href={i.href} className="flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-raised">
+              <span className={cn("shrink-0 rounded-md p-1.5", TONE[i.severity])}>
+                <Icon className="size-4" aria-hidden />
+                <span className="sr-only">{i.severity === "danger" ? "Urgent" : i.severity === "warning" ? "Needs action" : "For information"}</span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">{i.title}</span>
+                {i.detail ? <span className="block truncate text-xs text-muted-foreground">{i.detail}</span> : null}
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
